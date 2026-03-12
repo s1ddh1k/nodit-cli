@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+message_file="${1:?commit message file is required}"
+first_line="$(sed -n '1s/[[:space:]]*$//p' "$message_file")"
+
+if [[ -z "$first_line" ]]; then
+  echo "commit message must not be empty" >&2
+  exit 1
+fi
+
+if [[ "$first_line" =~ ^(Merge|Revert|fixup!|squash!) ]]; then
+  exit 0
+fi
+
+pattern='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9._/-]+\))?(!)?: .+'
+
+if [[ ! "$first_line" =~ $pattern ]]; then
+  cat >&2 <<'EOF'
+invalid commit message.
+
+expected format:
+  type(scope): subject
+
+examples:
+  feat(cli): add --field output selector
+  fix: handle JSON error envelopes consistently
+  refactor(output)!: simplify success and error rendering
+
+allowed types:
+  build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test
+EOF
+  exit 1
+fi

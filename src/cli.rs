@@ -1,13 +1,25 @@
 use clap::{Args as ClapArgs, Parser, Subcommand, ValueEnum};
 
 #[derive(Parser, Debug)]
-#[command(name = "nodit", version, about = "CLI for Nodit APIs and streams")]
+#[command(
+    name = "nodit",
+    version,
+    about = "CLI for Nodit APIs and streams",
+    next_line_help = true,
+    after_help = "Machine-friendly usage:\n  nodit --json ...\n  nodit --field result ...\n  nodit --field body ...\n\nWhen --output is omitted, the CLI defaults to pretty on a TTY and json when stdout is piped.\nAll responses use {\"ok\":...,\"data\"|\"error\":...} envelopes."
+)]
 pub struct Args {
     #[command(subcommand)]
     pub command: Command,
 
-    #[arg(long, value_enum, default_value_t = OutputFormat::Pretty)]
-    pub output: OutputFormat,
+    #[arg(long, alias = "format", value_enum)]
+    pub output: Option<OutputFormat>,
+
+    #[arg(long, global = true)]
+    pub json: bool,
+
+    #[arg(long, global = true)]
+    pub field: Option<String>,
 
     #[arg(long, global = true)]
     pub api_key: Option<String>,
@@ -430,6 +442,7 @@ pub enum DataCommand {
 pub enum DataNativeCommand {
     Balance(DataAccountArgs),
     TokenBalance(DataAccountArgs),
+    BalanceChangesByAccount(DataAccountArgs),
     TransfersByAccount(DataAccountArgs),
     TransfersWithinRange(DataRangeArgs),
     Holders(DataSimpleArgs),
@@ -452,6 +465,7 @@ pub enum DataTxCommand {
     ByTransactionIds(DataTransactionIdsArgs),
     ByAccount(DataAccountArgs),
     InBlock(DataBlockRefArgs),
+    InLedger(DataLedgerRefArgs),
     InternalByTransactionHash(DataTransactionArgs),
     SearchEvents(DataBodyArgs),
 }
@@ -461,7 +475,9 @@ pub enum DataBlockCommand {
     ByNumber(DataBlockNumberArgs),
     ByHash(DataBlockHashArgs),
     ByHashOrNumber(DataBlockRefArgs),
+    LedgerByHashOrIndex(DataLedgerRefArgs),
     WithinRange(DataRangeArgs),
+    LedgersWithinRange(DataLedgerRangeArgs),
     GasPrice(DataSimpleArgs),
 }
 
@@ -470,6 +486,8 @@ pub enum DataTokenCommand {
     OwnedByAccount(DataAccountArgs),
     Allowance(DataTokenAllowanceArgs),
     ContractMetadataByContracts(DataContractsArgs),
+    BalanceChangesByAccount(DataAccountArgs),
+    TransfersByCurrencyAndIssuer(DataTokenCurrencyIssuerArgs),
     HoldersByContract(DataContractArgs),
     PricesByContracts(DataContractsArgs),
     TransfersByContract(DataContractArgs),
@@ -691,6 +709,39 @@ pub struct DataBlockRefArgs {
 }
 
 #[derive(ClapArgs, Debug)]
+pub struct DataLedgerRefArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub ledger: String,
+
+    #[arg(long)]
+    pub body: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct DataLedgerRangeArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub from_ledger: String,
+
+    #[arg(long)]
+    pub to_ledger: String,
+
+    #[arg(long)]
+    pub body: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
 pub struct DataSimpleArgs {
     #[command(flatten)]
     pub target: NetworkArgs,
@@ -805,6 +856,24 @@ pub struct DataTokenAllowanceArgs {
 
     #[arg(long)]
     pub spender: String,
+
+    #[arg(long)]
+    pub body: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct DataTokenCurrencyIssuerArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub currency: String,
+
+    #[arg(long)]
+    pub issuer_address: String,
 
     #[arg(long)]
     pub body: Option<String>,

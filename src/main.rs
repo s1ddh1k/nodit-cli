@@ -20,7 +20,8 @@ use reqwest::{
 };
 use serde_json::{json, Map, Value};
 use sha2::Sha256;
-use std::{net::SocketAddr, path::PathBuf, sync::Arc};
+use std::io::IsTerminal;
+use std::{net::SocketAddr, path::PathBuf, process::ExitCode, sync::Arc};
 use tokio::{fs::OpenOptions, io::AsyncWriteExt, net::TcpListener};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use url::Url;
@@ -33,26 +34,61 @@ use crate::cli::{
     OutputFormat, SolanaNodeCommand, StreamCommand, WebhookCommand, WebhookServeArgs,
 };
 use crate::config::Config;
-use crate::output::render_output;
+use crate::output::{render_error, render_success};
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> ExitCode {
     let args = Args::parse();
+    let output = resolve_output_format(&args);
+    let field = args.field.clone();
+
+    match run(args, output).await {
+        Ok(response) => {
+            if let Err(error) = render_success(&response, output, field.as_deref()) {
+                if let Err(render_error_failure) = render_error(&error, output, None) {
+                    eprintln!("{render_error_failure:#}");
+                }
+                ExitCode::from(1)
+            } else {
+                ExitCode::SUCCESS
+            }
+        }
+        Err(error) => {
+            if let Err(render_error_failure) = render_error(&error, output, field.as_deref()) {
+                if let Err(fallback_error) = render_error(&render_error_failure, output, None) {
+                    eprintln!("{fallback_error:#}");
+                }
+            }
+            ExitCode::from(1)
+        }
+    }
+}
+
+async fn run(args: Args, output: OutputFormat) -> Result<Value> {
     let config = Config::from_env(&args)?;
     let client = Client::builder()
         .user_agent("nodit-cli/0.1.0")
         .build()
         .context("failed to build HTTP client")?;
 
-    let output = match args.command {
-        Command::Node(cmd) => handle_node(&client, &config, &args.output, cmd).await?,
-        Command::Data(cmd) => handle_data(&client, &config, &args.output, cmd).await?,
-        Command::Webhook(cmd) => handle_webhook(&client, &config, &args.output, cmd).await?,
-        Command::Stream(cmd) => handle_stream(&config, cmd).await?,
-    };
+    match args.command {
+        Command::Node(cmd) => handle_node(&client, &config, &output, cmd).await,
+        Command::Data(cmd) => handle_data(&client, &config, &output, cmd).await,
+        Command::Webhook(cmd) => handle_webhook(&client, &config, &output, cmd).await,
+        Command::Stream(cmd) => handle_stream(&config, cmd).await,
+    }
+}
 
-    render_output(&output, args.output)?;
-    Ok(())
+fn resolve_output_format(args: &Args) -> OutputFormat {
+    if args.json {
+        OutputFormat::Json
+    } else if let Some(output) = args.output {
+        output
+    } else if std::io::stdout().is_terminal() {
+        OutputFormat::Pretty
+    } else {
+        OutputFormat::Json
+    }
 }
 
 async fn handle_node(
@@ -742,6 +778,25 @@ async fn handle_data_native(
             )
             .await
         }
+        DataNativeCommand::BalanceChangesByAccount(args) => {
+            let body = merge_json_objects(
+                json!({ "accountAddress": args.account }),
+                args.body.as_deref(),
+            )?;
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "native",
+                    action: "getNativeTokenBalanceChangesByAccount",
+                    body,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
         DataNativeCommand::TransfersByAccount(args) => {
             let body = merge_json_objects(
                 json!({ "accountAddress": args.account }),
@@ -987,6 +1042,23 @@ async fn handle_data_tx(
             )
             .await
         }
+        DataTxCommand::InLedger(args) => {
+            let body =
+                merge_json_objects(json!({ "ledger": args.ledger }), args.body.as_deref())?;
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "blockchain",
+                    action: "getTransactionsInLedger",
+                    body,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
         DataTxCommand::ByHashes(args) => {
             let body = merge_json_objects(
                 json!({ "transactionHashes": args.hash }),
@@ -1113,6 +1185,47 @@ async fn handle_data_token(
                     target: &args.target,
                     category: "token",
                     action: "getTokenContractMetadataByContracts",
+                    body,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
+        DataTokenCommand::BalanceChangesByAccount(args) => {
+            let body = merge_json_objects(
+                json!({ "accountAddress": args.account }),
+                args.body.as_deref(),
+            )?;
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "token",
+                    action: "getTokenBalanceChangesByAccount",
+                    body,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
+        DataTokenCommand::TransfersByCurrencyAndIssuer(args) => {
+            let body = merge_json_objects(
+                json!({
+                    "currency": args.currency,
+                    "issuerAddress": args.issuer_address
+                }),
+                args.body.as_deref(),
+            )?;
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "token",
+                    action: "getTokenTransfersByCurrencyAndIssuer",
                     body,
                     headers: &args.headers,
                 },
@@ -1904,6 +2017,23 @@ async fn handle_data_block(
             )
             .await
         }
+        DataBlockCommand::LedgerByHashOrIndex(args) => {
+            let body =
+                merge_json_objects(json!({ "ledger": args.ledger }), args.body.as_deref())?;
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "blockchain",
+                    action: "getLedgerByHashOrIndex",
+                    body,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
         DataBlockCommand::WithinRange(args) => {
             let body = merge_json_objects(
                 json!({ "fromBlock": args.from_block, "toBlock": args.to_block }),
@@ -1917,6 +2047,25 @@ async fn handle_data_block(
                     target: &args.target,
                     category: "blockchain",
                     action: "getBlocksWithinRange",
+                    body,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
+        DataBlockCommand::LedgersWithinRange(args) => {
+            let body = merge_json_objects(
+                json!({ "fromLedger": args.from_ledger, "toLedger": args.to_ledger }),
+                args.body.as_deref(),
+            )?;
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "blockchain",
+                    action: "getLedgersWithinRange",
                     body,
                     headers: &args.headers,
                 },
@@ -3068,5 +3217,139 @@ mod tests {
 
         assert_eq!(merged["transactionHashes"][0], "0x1");
         assert_eq!(merged["withDecode"], true);
+    }
+
+    #[test]
+    fn native_balance_changes_action_uses_account_address() {
+        let merged = merge_json_objects(
+            json!({ "accountAddress": "rEXAMPLE" }),
+            Some(r#"{"withCount":true}"#),
+        )
+        .expect("merge should succeed");
+
+        assert_eq!(merged["accountAddress"], "rEXAMPLE");
+        assert_eq!(merged["withCount"], true);
+    }
+
+    #[test]
+    fn token_balance_changes_action_uses_account_address() {
+        let merged = merge_json_objects(
+            json!({ "accountAddress": "rEXAMPLE" }),
+            Some(r#"{"currency":"USD"}"#),
+        )
+        .expect("merge should succeed");
+
+        assert_eq!(merged["accountAddress"], "rEXAMPLE");
+        assert_eq!(merged["currency"], "USD");
+    }
+
+    #[test]
+    fn xrpl_ledger_by_hash_or_index_uses_ledger_field() {
+        let merged = merge_json_objects(
+            json!({ "ledger": "validated" }),
+            Some(r#"{"withTransactions":true}"#),
+        )
+        .expect("merge should succeed");
+
+        assert_eq!(merged["ledger"], "validated");
+        assert_eq!(merged["withTransactions"], true);
+    }
+
+    #[test]
+    fn xrpl_ledgers_within_range_uses_ledger_range_fields() {
+        let merged = merge_json_objects(
+            json!({ "fromLedger": "1", "toLedger": "10" }),
+            Some(r#"{"withCount":true}"#),
+        )
+        .expect("merge should succeed");
+
+        assert_eq!(merged["fromLedger"], "1");
+        assert_eq!(merged["toLedger"], "10");
+        assert_eq!(merged["withCount"], true);
+    }
+
+    #[test]
+    fn xrpl_transactions_in_ledger_uses_ledger_field() {
+        let merged = merge_json_objects(
+            json!({ "ledger": "3000000" }),
+            Some(r#"{"limit":20}"#),
+        )
+        .expect("merge should succeed");
+
+        assert_eq!(merged["ledger"], "3000000");
+        assert_eq!(merged["limit"], 20);
+    }
+
+    #[test]
+    fn xrpl_token_transfers_by_currency_and_issuer_uses_both_fields() {
+        let merged = merge_json_objects(
+            json!({ "currency": "USD", "issuerAddress": "rIssuer" }),
+            Some(r#"{"withCount":true}"#),
+        )
+        .expect("merge should succeed");
+
+        assert_eq!(merged["currency"], "USD");
+        assert_eq!(merged["issuerAddress"], "rIssuer");
+        assert_eq!(merged["withCount"], true);
+    }
+
+    #[test]
+    fn resolve_output_format_prefers_json_flag() {
+        let args = Args {
+            command: Command::Stream(crate::cli::StreamCommand {
+                target: NetworkArgs {
+                    protocol: "ethereum".to_string(),
+                    network: "mainnet".to_string(),
+                },
+                url: None,
+                subscribe: None,
+                event_type: None,
+                condition_json: None,
+                id: None,
+                period: None,
+                addresses: Vec::new(),
+                messages: 1,
+            }),
+            output: Some(OutputFormat::Raw),
+            json: true,
+            field: None,
+            api_key: None,
+            api_base_url: None,
+            rpc_url: None,
+            stream_url: None,
+            aptos_api_base_url: None,
+        };
+
+        assert_eq!(resolve_output_format(&args), OutputFormat::Json);
+    }
+
+    #[test]
+    fn resolve_output_format_uses_explicit_output() {
+        let args = Args {
+            command: Command::Stream(crate::cli::StreamCommand {
+                target: NetworkArgs {
+                    protocol: "ethereum".to_string(),
+                    network: "mainnet".to_string(),
+                },
+                url: None,
+                subscribe: None,
+                event_type: None,
+                condition_json: None,
+                id: None,
+                period: None,
+                addresses: Vec::new(),
+                messages: 1,
+            }),
+            output: Some(OutputFormat::Raw),
+            json: false,
+            field: None,
+            api_key: None,
+            api_base_url: None,
+            rpc_url: None,
+            stream_url: None,
+            aptos_api_base_url: None,
+        };
+
+        assert_eq!(resolve_output_format(&args), OutputFormat::Raw);
     }
 }

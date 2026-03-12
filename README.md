@@ -39,6 +39,44 @@ Example config files:
 - [config.example.toml](/home/eugene/git/nodit-cli/config.example.toml)
 - [.env.example](/home/eugene/git/nodit-cli/.env.example)
 
+## AI-friendly usage
+
+Use `--json` when another tool or agent will parse the output:
+
+```bash
+nodit --json data native balance \
+  --protocol ethereum \
+  --network mainnet \
+  --account 0x0000000000000000000000000000000000000000
+```
+
+Extract only the field an agent needs:
+
+```bash
+nodit --json --field result data native balance \
+  --protocol ethereum \
+  --network mainnet \
+  --account 0x0000000000000000000000000000000000000000
+```
+
+Common field aliases:
+
+- `result` -> `data.body.result`
+- `body` -> `data.body`
+- `headers` -> `data.headers`
+- `status` -> `data.status`
+- `error` -> `error`
+
+When `--output` is omitted, the CLI prints pretty JSON in an interactive terminal and compact JSON when stdout is piped. All command results use a stable envelope:
+
+```json
+{"ok":true,"data":{...}}
+```
+
+```json
+{"ok":false,"error":{...}}
+```
+
 ## Build
 
 ```bash
@@ -237,6 +275,34 @@ nodit data tx by-account \
   --protocol bitcoin \
   --network mainnet \
   --account 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+```
+
+XRPL ledger by hash or index:
+
+```bash
+nodit data block ledger-by-hash-or-index \
+  --protocol xrpl \
+  --network mainnet \
+  --ledger 95000002
+```
+
+XRPL transactions in ledger:
+
+```bash
+nodit data tx in-ledger \
+  --protocol xrpl \
+  --network mainnet \
+  --ledger 95000002
+```
+
+XRPL token transfers by currency and issuer:
+
+```bash
+nodit data token transfers-by-currency-and-issuer \
+  --protocol xrpl \
+  --network mainnet \
+  --currency USD \
+  --issuer-address rIssuerAddressHere
 ```
 
 Bitcoin block-style queries are not assumed to share the same EVM-style path shape. Use only the verified `data account` and `data tx` flows until the Bitcoin-specific data endpoints are mapped from the official docs.

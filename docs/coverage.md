@@ -59,6 +59,7 @@ Verified live on `node solana`:
 
 - [x] `getNativeBalanceByAccount`
 - [x] `getNativeTokenBalanceByAccount`
+- [x] `getNativeTokenBalanceChangesByAccount`
 - [x] `getNativeTransfersByAccount`
 - [x] `getNativeTransfersWithinRange`
 - [x] `getNativeHolders`
@@ -83,6 +84,7 @@ Bitcoin status:
 - [x] `getTransactionsByTransactionIds`
 - [x] `getTransactionsByAccount`
 - [x] `getTransactionsInBlock`
+- [x] `getTransactionsInLedger`
 - [x] `getInternalTransactionsByTransactionHash`
 - [x] `searchEvents`
 
@@ -92,15 +94,19 @@ Bitcoin status:
 - [x] `getBlockByHash`
 - [x] `getBlockByHashOrNumber`
 - [x] `getBlocksWithinRange`
+- [x] `getLedgerByHashOrIndex`
+- [x] `getLedgersWithinRange`
 - [x] `getGasPrice`
 
 ### Token
 
 - [x] `getTokensOwnedByAccount`
 - [x] `getTokenAllowance`
+- [x] `getTokenBalanceChangesByAccount`
 - [x] `getTokenContractMetadataByContracts`
 - [x] `getTokenHoldersByContract`
 - [x] `getTokenPricesByContracts`
+- [x] `getTokenTransfersByCurrencyAndIssuer`
 - [x] `getTokenTransfersByContract`
 - [x] `getTokenTransfersWithinRange`
 - [x] `getTokenTransfersByAccount`
@@ -164,3 +170,4 @@ Bitcoin status:
 - As of March 13, 2026, `solana` has been live-verified on the `node` surface, while `bitcoin` has been live-verified on the `data` surface.
 - As of March 13, 2026, Bitcoin `data account`, `data tx by-account`, and `data block by-hash-or-number` are live-verified.
 - As of March 13, 2026, Bitcoin `native` balance is confirmed unsupported on Nodit's `native` category.
+- As of March 13, 2026, XRPL `data block ledger-by-hash-or-index`, `data block ledgers-within-range`, `data tx in-ledger`, and `data token transfers-by-currency-and-issuer` are live-verified with numeric ledger indexes.
