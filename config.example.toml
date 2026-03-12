@@ -1,0 +1,5 @@
+api_key = "YOUR_API_KEY"
+api_base_url = "https://web3.nodit.io"
+rpc_url = "https://web3.nodit.io"
+stream_url = "wss://web3.nodit.io"
+aptos_api_base_url = "https://aptos.nodit.io"

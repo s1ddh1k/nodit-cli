@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Release Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_base: nodit-cli-linux
+            binary_name: nodit-cli
+          - os: macos-latest
+            artifact_base: nodit-cli-macos
+            binary_name: nodit-cli
+          - os: windows-latest
+            artifact_base: nodit-cli-windows
+            binary_name: nodit-cli.exe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Package Unix artifact
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          ARTIFACT="${{ matrix.artifact_base }}"
+          mkdir "$ARTIFACT"
+          cp "target/release/${{ matrix.binary_name }}" "$ARTIFACT/"
+          cp README.md "$ARTIFACT/"
+          tar -czf "${ARTIFACT}.tar.gz" "$ARTIFACT"
+
+      - name: Package Windows artifact
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $artifact = "${{ matrix.artifact_base }}"
+          New-Item -ItemType Directory -Path $artifact | Out-Null
+          Copy-Item "target/release/${{ matrix.binary_name }}" "$artifact/"
+          Copy-Item "README.md" "$artifact/"
+          Compress-Archive -Path "$artifact" -DestinationPath "$artifact.zip"
+
+      - name: Upload release asset (Unix)
+        if: runner.os != 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact_base }}.tar.gz
+
+      - name: Upload release asset (Windows)
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact_base }}.zip
