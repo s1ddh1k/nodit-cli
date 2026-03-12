@@ -2,11 +2,11 @@ use clap::{Args as ClapArgs, Parser, Subcommand, ValueEnum};
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "nodit",
+    name = "nodit-cli",
     version,
     about = "CLI for Nodit APIs and streams",
     next_line_help = true,
-    after_help = "Machine-friendly usage:\n  nodit --json ...\n  nodit --field result ...\n  nodit --field body ...\n\nWhen --output is omitted, the CLI defaults to pretty on a TTY and json when stdout is piped.\nAll responses use {\"ok\":...,\"data\"|\"error\":...} envelopes."
+    after_help = "Machine-friendly usage:\n  nodit-cli --json ...\n  nodit-cli --field result ...\n  nodit-cli --field body ...\n\nWhen --output is omitted, the CLI defaults to pretty on a TTY and json when stdout is piped.\nAll responses use {\"ok\":...,\"data\"|\"error\":...} envelopes."
 )]
 pub struct Args {
     #[command(subcommand)]
@@ -58,6 +58,8 @@ pub enum NodeCommand {
     Solana(SolanaNodeCommand),
     #[command(subcommand)]
     Bitcoin(BitcoinNodeCommand),
+    #[command(subcommand)]
+    Sui(SuiNodeCommand),
     #[command(subcommand)]
     Dogecoin(GenericNodeCommand),
     #[command(subcommand)]
@@ -231,6 +233,15 @@ pub enum BitcoinNodeCommand {
     BlockHash(BitcoinBlockHashArgs),
     Block(BitcoinBlockArgs),
     Transaction(BitcoinTransactionArgs),
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SuiNodeCommand {
+    Raw(NodeRawArgs),
+    ChainIdentifier(NodeTargetArgs),
+    ReferenceGasPrice(NodeTargetArgs),
+    Object(SuiObjectArgs),
+    Transaction(SuiTransactionArgs),
 }
 
 #[derive(ClapArgs, Debug)]
@@ -413,6 +424,36 @@ pub struct BitcoinTransactionArgs {
     pub headers: Vec<HeaderArg>,
 }
 
+#[derive(ClapArgs, Debug)]
+pub struct SuiObjectArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub object_id: String,
+
+    #[arg(long)]
+    pub options_json: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct SuiTransactionArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub digest: String,
+
+    #[arg(long)]
+    pub options_json: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
 #[derive(Subcommand, Debug)]
 pub enum DataCommand {
     #[command(subcommand)]
@@ -444,6 +485,7 @@ pub enum DataNativeCommand {
     TokenBalance(DataAccountArgs),
     BalanceChangesByAccount(DataAccountArgs),
     TransfersByAccount(DataAccountArgs),
+    TokenTransfersByAccount(DataAccountArgs),
     TransfersWithinRange(DataRangeArgs),
     Holders(DataSimpleArgs),
 }
@@ -461,9 +503,13 @@ pub enum DataAccountCommand {
 pub enum DataTxCommand {
     ByHash(DataTransactionArgs),
     ByTransactionId(DataTransactionIdArgs),
+    ByVersion(DataVersionArgs),
     ByHashes(DataHashesArgs),
+    ByVersions(DataVersionsArgs),
     ByTransactionIds(DataTransactionIdsArgs),
     ByAccount(DataAccountArgs),
+    EventsByAccount(DataAccountArgs),
+    EventsByType(DataEventTypeArgs),
     InBlock(DataBlockRefArgs),
     InLedger(DataLedgerRefArgs),
     InternalByTransactionHash(DataTransactionArgs),
@@ -484,9 +530,14 @@ pub enum DataBlockCommand {
 #[derive(Subcommand, Debug)]
 pub enum DataTokenCommand {
     OwnedByAccount(DataAccountArgs),
+    AccountsByAssetType(DataAssetTypeArgs),
     Allowance(DataTokenAllowanceArgs),
+    MetadataByAssetTypes(DataAssetTypesArgs),
+    PairByAssetType(DataAssetTypeRequiredArgs),
     ContractMetadataByContracts(DataContractsArgs),
     BalanceChangesByAccount(DataAccountArgs),
+    BalanceChangesByAssetType(DataAssetTypeArgs),
+    BalanceChangesWithinRange(DataRangeArgs),
     TransfersByCurrencyAndIssuer(DataTokenCurrencyIssuerArgs),
     HoldersByContract(DataContractArgs),
     PricesByContracts(DataContractsArgs),
@@ -567,10 +618,23 @@ pub enum WebhookCommand {
 pub enum AptosNodeCommand {
     Raw(AptosRawArgs),
     LedgerInfo(AptosNodeBaseArgs),
+    EstimateGasPrice(AptosNodeBaseArgs),
     Account(AptosAccountArgs),
+    AccountBalance(AptosAccountBalanceArgs),
     Resources(AptosAccountArgs),
     Module(AptosModuleArgs),
+    Modules(AptosAccountModulesArgs),
+    AccountTransactions(AptosAccountTransactionsArgs),
+    TransactionSummaries(AptosAccountTransactionsArgs),
+    EventsByCreationNumber(AptosEventsByCreationNumberArgs),
+    EventsByEventHandle(AptosEventsByHandleArgs),
     TransactionByHash(AptosTransactionArgs),
+    TransactionByVersion(AptosTransactionVersionArgs),
+    Transactions(AptosTransactionsArgs),
+    BlockByHeight(AptosBlockHeightArgs),
+    BlockByVersion(AptosBlockVersionArgs),
+    View(AptosViewArgs),
+    TableItem(AptosTableItemArgs),
 }
 
 #[derive(ClapArgs, Debug, Clone)]
@@ -649,12 +713,57 @@ pub struct DataTransactionIdArgs {
 }
 
 #[derive(ClapArgs, Debug)]
+pub struct DataVersionArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub version: u64,
+
+    #[arg(long)]
+    pub body: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct DataVersionsArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long, num_args = 1.., value_delimiter = ',')]
+    pub version: Vec<u64>,
+
+    #[arg(long)]
+    pub body: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
 pub struct DataTransactionIdsArgs {
     #[command(flatten)]
     pub target: NetworkArgs,
 
     #[arg(long = "transaction-id", num_args = 1.., value_delimiter = ',')]
     pub transaction_id: Vec<String>,
+
+    #[arg(long)]
+    pub body: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct DataEventTypeArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub event_type: String,
 
     #[arg(long)]
     pub body: Option<String>,
@@ -760,6 +869,54 @@ pub struct DataBodyArgs {
 
     #[arg(long)]
     pub body: String,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct DataAssetTypeArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub asset_type: Option<String>,
+
+    #[arg(long)]
+    pub linked_asset_type: Option<String>,
+
+    #[arg(long)]
+    pub body: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct DataAssetTypeRequiredArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub asset_type: String,
+
+    #[arg(long)]
+    pub body: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct DataAssetTypesArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long = "asset-type", num_args = 1.., value_delimiter = ',')]
+    pub asset_type: Vec<String>,
+
+    #[arg(long)]
+    pub body: Option<String>,
 
     #[arg(long = "header", value_parser = parse_header)]
     pub headers: Vec<HeaderArg>,
@@ -1207,6 +1364,21 @@ pub struct AptosAccountArgs {
 }
 
 #[derive(ClapArgs, Debug)]
+pub struct AptosAccountBalanceArgs {
+    #[arg(long)]
+    pub address: String,
+
+    #[arg(long)]
+    pub asset_type: String,
+
+    #[arg(long)]
+    pub ledger_version: Option<u64>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
 pub struct AptosModuleArgs {
     #[arg(long)]
     pub address: String,
@@ -1219,9 +1391,162 @@ pub struct AptosModuleArgs {
 }
 
 #[derive(ClapArgs, Debug)]
+pub struct AptosAccountModulesArgs {
+    #[arg(long)]
+    pub address: String,
+
+    #[arg(long)]
+    pub ledger_version: Option<u64>,
+
+    #[arg(long)]
+    pub limit: Option<u16>,
+
+    #[arg(long)]
+    pub start: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct AptosAccountTransactionsArgs {
+    #[arg(long)]
+    pub address: String,
+
+    #[arg(long)]
+    pub limit: Option<u16>,
+
+    #[arg(long)]
+    pub start: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct AptosEventsByCreationNumberArgs {
+    #[arg(long)]
+    pub address: String,
+
+    #[arg(long)]
+    pub creation_number: u64,
+
+    #[arg(long)]
+    pub limit: Option<u16>,
+
+    #[arg(long)]
+    pub start: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct AptosEventsByHandleArgs {
+    #[arg(long)]
+    pub address: String,
+
+    #[arg(long)]
+    pub event_handle: String,
+
+    #[arg(long)]
+    pub field_name: String,
+
+    #[arg(long)]
+    pub limit: Option<u16>,
+
+    #[arg(long)]
+    pub start: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
 pub struct AptosTransactionArgs {
     #[arg(long)]
     pub hash: String,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct AptosTransactionVersionArgs {
+    #[arg(long)]
+    pub version: u64,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct AptosTransactionsArgs {
+    #[arg(long)]
+    pub limit: Option<u16>,
+
+    #[arg(long)]
+    pub start: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct AptosBlockHeightArgs {
+    #[arg(long)]
+    pub block_height: u64,
+
+    #[arg(long)]
+    pub with_transactions: Option<bool>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct AptosBlockVersionArgs {
+    #[arg(long)]
+    pub version: u64,
+
+    #[arg(long)]
+    pub with_transactions: Option<bool>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct AptosViewArgs {
+    #[arg(long)]
+    pub function: String,
+
+    #[arg(long = "type-arg", num_args = 0.., value_delimiter = ',')]
+    pub type_arg: Vec<String>,
+
+    #[arg(long)]
+    pub arguments_json: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct AptosTableItemArgs {
+    #[arg(long)]
+    pub table_handle: String,
+
+    #[arg(long)]
+    pub key_type: String,
+
+    #[arg(long)]
+    pub value_type: String,
+
+    #[arg(long)]
+    pub key: String,
+
+    #[arg(long)]
+    pub ledger_version: Option<u64>,
 
     #[arg(long = "header", value_parser = parse_header)]
     pub headers: Vec<HeaderArg>,

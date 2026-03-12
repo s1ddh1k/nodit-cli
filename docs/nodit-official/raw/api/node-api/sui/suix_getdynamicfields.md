@@ -1,0 +1,96 @@
+# suix_getDynamicFields
+
+**`POST /`**
+
+Return the list of dynamic field objects owned by an object.
+
+## Request Body
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| id | integer | ✓ |  |
+| jsonrpc | string | ✓ |  |
+| method | string | ✓ |  |
+| params | array | ✓ |  |
+
+### Example
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "suix_getDynamicFields",
+  "params": [
+    "0x5612581eba57ebe7e594b809ccceec2be4dac6ff6945d49b3ecc043d049611f6",
+    "0x671832358f25bfacde706e528df4e15bb8de6dadd21835dfe44f4973139c15f9",
+    3
+  ]
+}
+```
+
+## Response
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| jsonrpc | string |  |  |
+| id | integer |  |  |
+| result | object |  | `next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item. |
+| result.data | array | ✓ |  |
+| result.data[].bcsEncoding | string | ✓ |  |
+| result.data[].bcsName | string | ✓ | Base64 encoding |
+| result.hasNextPage | boolean | ✓ |  |
+| result.nextCursor | string |  | Hex string encoding. |
+
+### Example
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "name": {
+          "type": "0x0000000000000000000000000000000000000000000000000000000000000009::test::TestField",
+          "value": "some_value"
+        },
+        "bcsEncoding": "base64",
+        "bcsName": "FDB4OTo6dGVzdDo6VGVzdEZpZWxk",
+        "type": "DynamicField",
+        "objectType": "test",
+        "objectId": "0xcfd10bca4d517e9452ad5486d69ee482b758c2399039dbbedd5db24385e934d6",
+        "version": 1,
+        "digest": "9oCJR2QHVThbwWtSYwmWv6oSFw26PuxXkLyFrUbNqpU2"
+      },
+      {
+        "name": {
+          "type": "0x0000000000000000000000000000000000000000000000000000000000000009::test::TestField",
+          "value": "some_value"
+        },
+        "bcsEncoding": "base64",
+        "bcsName": "FDB4OTo6dGVzdDo6VGVzdEZpZWxk",
+        "type": "DynamicField",
+        "objectType": "test",
+        "objectId": "0x05a4a796534a1833ca2c4df8fda7d073bbbf2715d2cd82ed40dc051dd5e05f7f",
+        "version": 1,
+        "digest": "3F8njMJQe6DNxeuvUnHPVjuR9Lt3RNwfsBoxDcB9SXAa"
+      },
+      {
+        "name": {
+          "type": "0x0000000000000000000000000000000000000000000000000000000000000009::test::TestField",
+          "value": "some_value"
+        },
+        "bcsEncoding": "base64",
+        "bcsName": "FDB4OTo6dGVzdDo6VGVzdEZpZWxk",
+        "type": "DynamicField",
+        "objectType": "test",
+        "objectId": "0x6d95af2033dd243fe6bdc6886d51b7d1cb695b9491893f88a5ae1b9d4f235b3c",
+        "version": 1,
+        "digest": "9Ury7TXnLtHDrxreKjv5eMJpDAU4wZRuev4JJ1UnJBMp"
+      }
+    ],
+    "nextCursor": "0xfd0b2c4326c56b1fec231d73038dba0f0885b97982f5fcac3ec6f5c8cae16743",
+    "hasNextPage": true
+  },
+  "id": 1
+}
+```

@@ -1,0 +1,61 @@
+# trace_block
+
+**`POST /`**
+
+Traces the execution of all transactions included in a specified block. This method provides detailed trace information for all transactions executed in that block and is used to analyze the transaction processing at the block level.
+
+## Request Body
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| id | integer | ✓ |  |
+| jsonrpc | string | ✓ |  |
+| method | string | ✓ |  |
+| params | array | ✓ | Enter the following parameters as an array with the appropriate types.  1. `block number or block tag`: Enter the block number in hexadecimal string format. You can also enter block tags such as "earliest", "latest", or "pending". |
+
+### Example
+
+```json
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "method": "trace_block",
+  "params": [
+    "latest"
+  ]
+}
+```
+
+## Response
+
+### Example
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": [
+    {
+      "action": {
+        "from": "0x927c9ea873e461c164290f085933dbd15f28069f",
+        "callType": "call",
+        "gas": "0x0",
+        "input": "0x00b6e537f9b8256c762f73d5ccf110b3bf00000000023c78dadae1cff0c3678147d885b9bbe3bf2c9cb863968ac23fa58d4a55a7429c6ee71678cdbba9ea65bfe2597340c7df050bb32a0f6458bc7c766d8b55479b2257db3c63f73f9797fe7df0fb7798e089ff4fcb5b524ff39c390031b0ebc99d8bef96faa506fa6779855dd2b89694ddb9e3cb6f16e56ff3bebd2e2edcff926803cf410d9cc3fb382777eb11fbf0e5a75bb932fb4e6db0f9ec63636b76276feaf1a2c4f59c6c441b78016ae01357a110f66cf39dbdcfc2fd2e152b15771d335cbf4b98436a4df3e7e653ffb67d22dac04b5003f9c3affd485bd578bf8b37bef6c8d3cdc131dff3e73ebcc59ec8deffa8e5f2c277f38836f00ad440016f96532f53cceb769a4f559fef19f039e781cd912fbfde2dff1dbeebeee316063ba20dbc063530205ac43fab8869cebabd298fbc03fe79322d0c6ff37b7f3df1adab3773e6aa2dcb9b033afe2df8f8614dd0a34f8dd3ec5fb574544d3b74ca2e517bff82e6148719cb78e2163e0ab80e32f006d4c00d774ad53715ea76a4d76d5d603e6999619bd5e76eb118d5e0990f384292db04b28836f016d44075c547e69caf3fa7df4bd8b1a7eb6c73f3e1c5d5096977cae7f4dd926df82eb1d0996803ef400d3c93ef653c63d192ca95ef62dd0fbcd52db03a55cecf75a2322160fe09cdd7aa9caf8936f01ed44061052d5baf751d079cb38d272eafb68a38dbb9dc81cddebeea63d92ae13ec1895b8936f001d44016fb1981cfa65d92fae23b7bfd9a92c8220b6113d1af6b8f6e59fcccea9ff723115ba20d7c7400100000ffff39c010d601",
+        "to": "0xff00000000000000000000000000000000047777",
+        "value": "0x0"
+      },
+      "blockHash": "0x736da46f2d62bb75e496e0456cedb41443776c17068dd32d173236140c30318d",
+      "blockNumber": 5277952,
+      "result": {
+        "gasUsed": "0x0",
+        "output": "0x"
+      },
+      "subtraces": 0,
+      "traceAddress": [],
+      "transactionHash": "0x9d0e4396f563189591a89473d989df105b92ebdabd2f5378e8dfd01d71d6a099",
+      "transactionPosition": 153,
+      "type": "call"
+    }
+  ]
+}
+```

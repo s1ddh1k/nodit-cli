@@ -28,10 +28,11 @@ use url::Url;
 
 use crate::cli::{
     AptosNodeCommand, Args, BitcoinNodeCommand, Command, DataAccountCommand, DataAssetCommand,
-    DataBlockCommand, DataBodyArgs, DataCommand, DataEnsCommand, DataNativeCommand, DataNftCommand,
-    DataRawArgs, DataStatsCommand, DataTokenCommand, DataTxCommand, EvmNodeCommand,
-    GenericNodeCommand, HeaderArg, MultichainCommand, NetworkArgs, NodeCommand, NodeRawArgs,
-    OutputFormat, SolanaNodeCommand, StreamCommand, WebhookCommand, WebhookServeArgs,
+    DataBlockCommand, DataBodyArgs, DataCommand, DataEnsCommand, DataEventTypeArgs,
+    DataNativeCommand, DataNftCommand, DataRawArgs, DataStatsCommand, DataTokenCommand,
+    DataTxCommand, EvmNodeCommand, GenericNodeCommand, HeaderArg, MultichainCommand, NetworkArgs,
+    NodeCommand, NodeRawArgs, OutputFormat, SolanaNodeCommand, StreamCommand, SuiNodeCommand,
+    WebhookCommand, WebhookServeArgs,
 };
 use crate::config::Config;
 use crate::output::{render_error, render_success};
@@ -102,6 +103,7 @@ async fn handle_node(
         NodeCommand::Aptos(cmd) => handle_aptos_node(client, config, output, cmd).await,
         NodeCommand::Solana(cmd) => handle_solana_node(client, config, output, cmd).await,
         NodeCommand::Bitcoin(cmd) => handle_bitcoin_node(client, config, output, cmd).await,
+        NodeCommand::Sui(cmd) => handle_sui_node(client, config, output, cmd).await,
         NodeCommand::Dogecoin(cmd) => handle_generic_node(client, config, output, cmd).await,
         NodeCommand::Xrpl(cmd) => handle_generic_node(client, config, output, cmd).await,
     }
@@ -386,7 +388,7 @@ async fn handle_bitcoin_node(
 ) -> Result<Value> {
     if config.rpc_url.is_none() {
         return Err(anyhow!(
-            "bitcoin node is not available on the default Nodit Elastic Node endpoint for this CLI flow; use `nodit data ... --protocol bitcoin --network mainnet` or pass --rpc-url for a custom Bitcoin RPC endpoint"
+            "bitcoin node is not available on the default Nodit Elastic Node endpoint for this CLI flow; use `nodit-cli data ... --protocol bitcoin --network mainnet` or pass --rpc-url for a custom Bitcoin RPC endpoint"
         ));
     }
 
@@ -438,6 +440,73 @@ async fn handle_bitcoin_node(
                 &args.headers,
                 "getrawtransaction",
                 json!([args.txid, args.verbose.unwrap_or(true)]),
+            )
+            .await
+        }
+    }
+}
+
+async fn handle_sui_node(
+    client: &Client,
+    config: &Config,
+    output: &OutputFormat,
+    cmd: SuiNodeCommand,
+) -> Result<Value> {
+    match cmd {
+        SuiNodeCommand::Raw(cmd) => execute_node_rpc(client, config, output, cmd).await,
+        SuiNodeCommand::ChainIdentifier(args) => {
+            execute_node_method(
+                client,
+                config,
+                output,
+                &args.target,
+                &args.headers,
+                "sui_getChainIdentifier",
+                Value::Array(Vec::new()),
+            )
+            .await
+        }
+        SuiNodeCommand::ReferenceGasPrice(args) => {
+            execute_node_method(
+                client,
+                config,
+                output,
+                &args.target,
+                &args.headers,
+                "suix_getReferenceGasPrice",
+                Value::Array(Vec::new()),
+            )
+            .await
+        }
+        SuiNodeCommand::Object(args) => {
+            let mut params = vec![Value::String(args.object_id)];
+            if let Some(options_json) = args.options_json {
+                params.push(parse_json_required(&options_json)?);
+            }
+            execute_node_method(
+                client,
+                config,
+                output,
+                &args.target,
+                &args.headers,
+                "sui_getObject",
+                Value::Array(params),
+            )
+            .await
+        }
+        SuiNodeCommand::Transaction(args) => {
+            let mut params = vec![Value::String(args.digest)];
+            if let Some(options_json) = args.options_json {
+                params.push(parse_json_required(&options_json)?);
+            }
+            execute_node_method(
+                client,
+                config,
+                output,
+                &args.target,
+                &args.headers,
+                "sui_getTransactionBlock",
+                Value::Array(params),
             )
             .await
         }
@@ -816,6 +885,25 @@ async fn handle_data_native(
             )
             .await
         }
+        DataNativeCommand::TokenTransfersByAccount(args) => {
+            let body = merge_json_objects(
+                json!({ "accountAddress": args.account }),
+                args.body.as_deref(),
+            )?;
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "native",
+                    action: "getNativeTokenTransfersByAccount",
+                    body,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
         DataNativeCommand::TransfersWithinRange(args) => {
             let body = merge_json_objects(
                 json!({ "fromBlock": args.from_block, "toBlock": args.to_block }),
@@ -1004,6 +1092,24 @@ async fn handle_data_tx(
             )
             .await
         }
+        DataTxCommand::ByVersion(args) => {
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "blockchain",
+                    action: "getTransactionByVersion",
+                    body: merge_json_objects(
+                        json!({ "version": args.version }),
+                        args.body.as_deref(),
+                    )?,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
         DataTxCommand::ByAccount(args) => {
             let body = merge_json_objects(
                 json!({ "accountAddress": args.account }),
@@ -1018,6 +1124,40 @@ async fn handle_data_tx(
                     category: "blockchain",
                     action: "getTransactionsByAccount",
                     body,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
+        DataTxCommand::EventsByAccount(args) => {
+            let body = merge_json_objects(
+                json!({ "accountAddress": args.account }),
+                args.body.as_deref(),
+            )?;
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "blockchain",
+                    action: "getEventsByAccount",
+                    body,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
+        DataTxCommand::EventsByType(args) => {
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "blockchain",
+                    action: "getEventsByType",
+                    body: build_event_type_body(&args)?,
                     headers: &args.headers,
                 },
             )
@@ -1043,8 +1183,7 @@ async fn handle_data_tx(
             .await
         }
         DataTxCommand::InLedger(args) => {
-            let body =
-                merge_json_objects(json!({ "ledger": args.ledger }), args.body.as_deref())?;
+            let body = merge_json_objects(json!({ "ledger": args.ledger }), args.body.as_deref())?;
             execute_data_action(
                 client,
                 config,
@@ -1073,6 +1212,24 @@ async fn handle_data_tx(
                     category: "blockchain",
                     action: "getTransactionsByHashes",
                     body,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
+        DataTxCommand::ByVersions(args) => {
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "blockchain",
+                    action: "getTransactionsByVersions",
+                    body: merge_json_objects(
+                        json!({ "transactionVersions": args.version }),
+                        args.body.as_deref(),
+                    )?,
                     headers: &args.headers,
                 },
             )
@@ -1149,6 +1306,25 @@ async fn handle_data_token(
             )
             .await
         }
+        DataTokenCommand::AccountsByAssetType(args) => {
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "token",
+                    action: "getTokenAccountsByAssetType",
+                    body: build_asset_type_selector_body(
+                        args.asset_type.as_deref(),
+                        args.linked_asset_type.as_deref(),
+                        args.body.as_deref(),
+                    )?,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
         DataTokenCommand::Allowance(args) => {
             let body = merge_json_objects(
                 json!({
@@ -1167,6 +1343,42 @@ async fn handle_data_token(
                     category: "token",
                     action: "getTokenAllowance",
                     body,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
+        DataTokenCommand::MetadataByAssetTypes(args) => {
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "token",
+                    action: "getTokenMetadataByAssetTypes",
+                    body: merge_json_objects(
+                        json!({ "assetTypes": args.asset_type }),
+                        args.body.as_deref(),
+                    )?,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
+        DataTokenCommand::PairByAssetType(args) => {
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "token",
+                    action: "getTokenPairByAssetType",
+                    body: merge_json_objects(
+                        json!({ "assetType": args.asset_type }),
+                        args.body.as_deref(),
+                    )?,
                     headers: &args.headers,
                 },
             )
@@ -1204,6 +1416,44 @@ async fn handle_data_token(
                     target: &args.target,
                     category: "token",
                     action: "getTokenBalanceChangesByAccount",
+                    body,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
+        DataTokenCommand::BalanceChangesByAssetType(args) => {
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "token",
+                    action: "getTokenBalanceChangesByAssetType",
+                    body: build_asset_type_selector_body(
+                        args.asset_type.as_deref(),
+                        args.linked_asset_type.as_deref(),
+                        args.body.as_deref(),
+                    )?,
+                    headers: &args.headers,
+                },
+            )
+            .await
+        }
+        DataTokenCommand::BalanceChangesWithinRange(args) => {
+            let body = merge_json_objects(
+                json!({ "fromBlock": args.from_block, "toBlock": args.to_block }),
+                args.body.as_deref(),
+            )?;
+            execute_data_action(
+                client,
+                config,
+                output,
+                DataActionRequest {
+                    target: &args.target,
+                    category: "token",
+                    action: "getTokenBalanceChangesWithinRange",
                     body,
                     headers: &args.headers,
                 },
@@ -2018,8 +2268,7 @@ async fn handle_data_block(
             .await
         }
         DataBlockCommand::LedgerByHashOrIndex(args) => {
-            let body =
-                merge_json_objects(json!({ "ledger": args.ledger }), args.body.as_deref())?;
+            let body = merge_json_objects(json!({ "ledger": args.ledger }), args.body.as_deref())?;
             execute_data_action(
                 client,
                 config,
@@ -2330,11 +2579,41 @@ async fn handle_aptos_node(
             )
             .await
         }
+        AptosNodeCommand::EstimateGasPrice(args) => {
+            let url = join_url(&config.aptos_api_base_url, "/estimate_gas_price")?;
+            execute_json_request(
+                client,
+                Method::GET,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                None,
+                output,
+            )
+            .await
+        }
         AptosNodeCommand::Account(args) => {
             let url = join_url(
                 &config.aptos_api_base_url,
                 &format!("/accounts/{}", args.address),
             )?;
+            execute_json_request(
+                client,
+                Method::GET,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                None,
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::AccountBalance(args) => {
+            let mut url = join_url(
+                &config.aptos_api_base_url,
+                &format!("/accounts/{}/balance/{}", args.address, args.asset_type),
+            )?;
+            if let Some(ledger_version) = args.ledger_version {
+                url = append_query(url, &[("ledger_version", ledger_version.to_string())])?;
+            }
             execute_json_request(
                 client,
                 Method::GET,
@@ -2375,6 +2654,113 @@ async fn handle_aptos_node(
             )
             .await
         }
+        AptosNodeCommand::Modules(args) => {
+            let mut url = join_url(
+                &config.aptos_api_base_url,
+                &format!("/accounts/{}/modules", args.address),
+            )?;
+            let mut params = Vec::new();
+            if let Some(ledger_version) = args.ledger_version {
+                params.push(("ledger_version", ledger_version.to_string()));
+            }
+            if let Some(limit) = args.limit {
+                params.push(("limit", limit.to_string()));
+            }
+            if let Some(start) = args.start {
+                params.push(("start", start));
+            }
+            if !params.is_empty() {
+                url = append_query(url, &params)?;
+            }
+            execute_json_request(
+                client,
+                Method::GET,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                None,
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::AccountTransactions(args) => {
+            let mut url = join_url(
+                &config.aptos_api_base_url,
+                &format!("/accounts/{}/transactions", args.address),
+            )?;
+            let params = build_aptos_pagination_params(args.limit, args.start);
+            if !params.is_empty() {
+                url = append_query(url, &params)?;
+            }
+            execute_json_request(
+                client,
+                Method::GET,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                None,
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::TransactionSummaries(args) => {
+            let mut url = join_url(
+                &config.aptos_api_base_url,
+                &format!("/accounts/{}/transaction_summaries", args.address),
+            )?;
+            let params = build_aptos_pagination_params(args.limit, args.start);
+            if !params.is_empty() {
+                url = append_query(url, &params)?;
+            }
+            execute_json_request(
+                client,
+                Method::GET,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                None,
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::EventsByCreationNumber(args) => {
+            let mut url = join_url(
+                &config.aptos_api_base_url,
+                &format!("/accounts/{}/events/{}", args.address, args.creation_number),
+            )?;
+            let params = build_aptos_pagination_params(args.limit, args.start);
+            if !params.is_empty() {
+                url = append_query(url, &params)?;
+            }
+            execute_json_request(
+                client,
+                Method::GET,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                None,
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::EventsByEventHandle(args) => {
+            let mut url = join_url(
+                &config.aptos_api_base_url,
+                &format!(
+                    "/accounts/{}/events/{}/{}",
+                    args.address, args.event_handle, args.field_name
+                ),
+            )?;
+            let params = build_aptos_pagination_params(args.limit, args.start);
+            if !params.is_empty() {
+                url = append_query(url, &params)?;
+            }
+            execute_json_request(
+                client,
+                Method::GET,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                None,
+                output,
+            )
+            .await
+        }
         AptosNodeCommand::TransactionByHash(args) => {
             let url = join_url(
                 &config.aptos_api_base_url,
@@ -2390,7 +2776,128 @@ async fn handle_aptos_node(
             )
             .await
         }
+        AptosNodeCommand::TransactionByVersion(args) => {
+            let url = join_url(
+                &config.aptos_api_base_url,
+                &format!("/transactions/by_version/{}", args.version),
+            )?;
+            execute_json_request(
+                client,
+                Method::GET,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                None,
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::Transactions(args) => {
+            let mut url = join_url(&config.aptos_api_base_url, "/transactions")?;
+            let params = build_aptos_pagination_params(args.limit, args.start);
+            if !params.is_empty() {
+                url = append_query(url, &params)?;
+            }
+            execute_json_request(
+                client,
+                Method::GET,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                None,
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::BlockByHeight(args) => {
+            let mut url = join_url(
+                &config.aptos_api_base_url,
+                &format!("/blocks/by_height/{}", args.block_height),
+            )?;
+            if let Some(with_transactions) = args.with_transactions {
+                url = append_query(url, &[("with_transactions", with_transactions.to_string())])?;
+            }
+            execute_json_request(
+                client,
+                Method::GET,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                None,
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::BlockByVersion(args) => {
+            let mut url = join_url(
+                &config.aptos_api_base_url,
+                &format!("/blocks/by_version/{}", args.version),
+            )?;
+            if let Some(with_transactions) = args.with_transactions {
+                url = append_query(url, &[("with_transactions", with_transactions.to_string())])?;
+            }
+            execute_json_request(
+                client,
+                Method::GET,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                None,
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::View(args) => {
+            let url = join_url(&config.aptos_api_base_url, "/view")?;
+            let body = json!({
+                "function": args.function,
+                "type_arguments": args.type_arg,
+                "arguments": parse_optional_json_array(args.arguments_json.as_deref())?,
+            });
+            execute_json_request(
+                client,
+                Method::POST,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                Some(body),
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::TableItem(args) => {
+            let mut url = join_url(
+                &config.aptos_api_base_url,
+                &format!("/tables/{}/item", args.table_handle),
+            )?;
+            if let Some(ledger_version) = args.ledger_version {
+                url = append_query(url, &[("ledger_version", ledger_version.to_string())])?;
+            }
+            let body = json!({
+                "key_type": args.key_type,
+                "value_type": args.value_type,
+                "key": args.key,
+            });
+            execute_json_request(
+                client,
+                Method::POST,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                Some(body),
+                output,
+            )
+            .await
+        }
     }
+}
+
+fn build_aptos_pagination_params(
+    limit: Option<u16>,
+    start: Option<String>,
+) -> Vec<(&'static str, String)> {
+    let mut params = Vec::new();
+    if let Some(limit) = limit {
+        params.push(("limit", limit.to_string()));
+    }
+    if let Some(start) = start {
+        params.push(("start", start));
+    }
+    params
 }
 
 async fn handle_stream(config: &Config, cmd: StreamCommand) -> Result<Value> {
@@ -2682,6 +3189,37 @@ fn merge_json_objects(base: Value, extra: Option<&str>) -> Result<Value> {
     }
 
     Ok(Value::Object(merged))
+}
+
+fn build_asset_type_selector_body(
+    asset_type: Option<&str>,
+    linked_asset_type: Option<&str>,
+    extra: Option<&str>,
+) -> Result<Value> {
+    let mut base = Map::new();
+    if let Some(asset_type) = asset_type {
+        base.insert(
+            "assetType".to_string(),
+            Value::String(asset_type.to_string()),
+        );
+    }
+    if let Some(linked_asset_type) = linked_asset_type {
+        base.insert(
+            "linkedAssetType".to_string(),
+            Value::String(linked_asset_type.to_string()),
+        );
+    }
+    if base.is_empty() && extra.is_none() {
+        return Err(anyhow!("pass --asset-type, --linked-asset-type, or --body"));
+    }
+    merge_json_objects(Value::Object(base), extra)
+}
+
+fn build_event_type_body(args: &DataEventTypeArgs) -> Result<Value> {
+    merge_json_objects(
+        json!({ "eventType": args.event_type }),
+        args.body.as_deref(),
+    )
 }
 
 fn optional_json_object(extra: Option<&str>) -> Result<Value> {
@@ -3270,11 +3808,8 @@ mod tests {
 
     #[test]
     fn xrpl_transactions_in_ledger_uses_ledger_field() {
-        let merged = merge_json_objects(
-            json!({ "ledger": "3000000" }),
-            Some(r#"{"limit":20}"#),
-        )
-        .expect("merge should succeed");
+        let merged = merge_json_objects(json!({ "ledger": "3000000" }), Some(r#"{"limit":20}"#))
+            .expect("merge should succeed");
 
         assert_eq!(merged["ledger"], "3000000");
         assert_eq!(merged["limit"], 20);
@@ -3291,6 +3826,67 @@ mod tests {
         assert_eq!(merged["currency"], "USD");
         assert_eq!(merged["issuerAddress"], "rIssuer");
         assert_eq!(merged["withCount"], true);
+    }
+
+    #[test]
+    fn asset_type_selector_body_uses_linked_asset_type() {
+        let body =
+            build_asset_type_selector_body(None, Some("0xlinked"), Some(r#"{"withCount":true}"#))
+                .expect("selector body");
+
+        assert_eq!(body["linkedAssetType"], "0xlinked");
+        assert_eq!(body["withCount"], true);
+    }
+
+    #[test]
+    fn asset_type_selector_body_requires_selector_or_body() {
+        assert!(build_asset_type_selector_body(None, None, None).is_err());
+    }
+
+    #[test]
+    fn event_type_body_uses_event_type_field() {
+        let args = DataEventTypeArgs {
+            target: NetworkArgs {
+                protocol: "aptos".to_string(),
+                network: "mainnet".to_string(),
+            },
+            event_type: "0x1::coin::DepositEvent".to_string(),
+            body: Some(r#"{"withCount":true}"#.to_string()),
+            headers: Vec::new(),
+        };
+
+        let body = build_event_type_body(&args).expect("event body");
+        assert_eq!(body["eventType"], "0x1::coin::DepositEvent");
+        assert_eq!(body["withCount"], true);
+    }
+
+    #[test]
+    fn parse_optional_json_array_defaults_to_empty_array() {
+        let params = parse_optional_json_array(None).expect("params");
+        assert_eq!(params, Value::Array(Vec::new()));
+    }
+
+    #[test]
+    fn parse_optional_json_array_rejects_non_array() {
+        assert!(parse_optional_json_array(Some(r#"{"not":"array"}"#)).is_err());
+    }
+
+    #[test]
+    fn build_aptos_pagination_params_includes_limit_and_start() {
+        let params = build_aptos_pagination_params(Some(25), Some("cursor123".to_string()));
+        assert_eq!(
+            params,
+            vec![
+                ("limit", "25".to_string()),
+                ("start", "cursor123".to_string())
+            ]
+        );
+    }
+
+    #[test]
+    fn build_aptos_pagination_params_handles_empty_values() {
+        let params = build_aptos_pagination_params(None, None);
+        assert!(params.is_empty());
     }
 
     #[test]

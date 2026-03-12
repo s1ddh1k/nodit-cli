@@ -1,0 +1,415 @@
+# Nodit Developer Documentation
+
+> Nodit is a blockchain infrastructure platform providing Node API, Web3 Data API, Webhook, Stream, and Multichain API services for 21+ blockchain networks.
+
+> Base URL: https://developer.nodit.io
+
+## Guides
+
+- [Accounts](https://developer.nodit.io/guides/account-management.md): Learn how to update account settings, monitor usage, and follow detailed steps for deactivating your account while maintaining security.
+- [Crypto Balance](https://developer.nodit.io/guides/crypto-balance.md): Pay for Nodit subscriptions with BTC, ETH, and USDT using our Crypto Balance. A USD-pegged ($1:1) prepaid system designed for flexible and secure blockchain infrastructure billing.
+- [FAQ](https://developer.nodit.io/guides/nodit-faq.md): Nodit FAQ
+- [Outstanding Charges](https://developer.nodit.io/guides/outstanding-charges.md): Learn how to settle outstanding charges on Nodit to avoid service interruptions. Follow our step-by-step guide to make payments via the console, reactivate your suspended services, and resolve billing failures quickly.
+- [Referral Program](https://developer.nodit.io/guides/referral-program.md): Invite your friends to Nodit and earn up to $60 in credits! Our referral program rewards both you and your invitees—get $10 when they sign up, and an extra $50 when they stay on a paid plan for 60 days.
+- [Service Status Monitoring](https://developer.nodit.io/guides/service-status-monitoring.md): Official Nodit Status page for real-time node health, incident reports, and maintenance updates. Subscribe via Webhook or Email to receive instant notifications on blockchain infrastructure performance.
+- [GIWA Testnet Facuet](https://developer.nodit.io/guides/giwa-testnet-facuet.md): GIWA is a blockchain network branded by Upbit. GIWA serving as its testnet. Nodit supports GIWA's testnet node and faucet.
+- [Kaia Testnet Facuet](https://developer.nodit.io/guides/kaia-testnet-facuet.md): Kaia is a blockchain network brand integrating Klaytn and Finschia, with Kairos serving as its testnet. Nodit supports Kaia's testnet node and faucet.
+- [Datasquare](https://developer.nodit.io/guides/data-square.md): Access normalized multichain blockchain datasets with Nodit Datasquare. Use built-in query tools and visualization dashboards for on-chain data analysis.
+- [Dedicated Node](https://developer.nodit.io/guides/dedicated-node.md): Nodit's Dedicated Nodes ensure exclusive access to resources for consistent API performance. Learn how to activate and manage your dedicated node with this comprehensive guide.
+- [Elastic Node](https://developer.nodit.io/guides/elastic-node.md): Leverage the power of Nodit's Elastic Nodes for auto-scaling blockchain APIs. This guide covers everything from activation to managing node performance for stable and efficient integrations.
+- [Stream](https://developer.nodit.io/guides/stream.md): Build real-time Web3 applications with Nodit's Stream API. Learn how to configure data streams, subscribe to blockchain events, and optimize event handling for reliable performance.
+- [Web3 Data API](https://developer.nodit.io/guides/web3-data-api.md): Access on-chain data effortlessly using Nodit's Web3 Data API. This guide provides detailed instructions for querying blockchain data, managing responses, and integrating Web3 functionality.
+- [Webhook](https://developer.nodit.io/guides/webhook.md): Simplify blockchain event tracking with Nodit Webhooks. This guide covers step-by-step instructions for configuring Webhook endpoints and handling incoming notifications effectively.
+- [API Key](https://developer.nodit.io/guides/api-key.md): Learn how to create, manage, and secure your Nodit API keys. This guide covers API key generation, access control, and best practices to protect your blockchain application integrations.
+- [Get Started with Nodit](https://developer.nodit.io/guides/get-started-with-nodit.md): Kickstart your blockchain development with Nodit's "Get Started" guide. Learn how to integrate APIs, configure your environment, and access robust blockchain data to power your applications. Perfect for developers at any experience level.
+- [Request Logs](https://developer.nodit.io/guides/request-logs.md): Learn how to use Nodit's Request Logs to monitor, analyze, and troubleshoot API calls. This guide provides step-by-step instructions for accessing logs, interpreting metrics, and improving API performance.
+- [Security](https://developer.nodit.io/guides/security.md): Discover essential security practices for integrating Nodit APIs. This guide provides actionable tips on protecting API keys from the unintended uses, enabling secure connections, and mitigating common threats in blockchain development.
+- [Team Account](https://developer.nodit.io/guides/team-account.md): Learn how to set up and manage a team account in Nodit for seamless project collaboration. Invite members, share resources, manage permissions, and streamline Web3 development with team-based controls.
+- [Auto Scaling](https://developer.nodit.io/guides/auto-scaling.md): Explore Nodit's auto-scaling capabilities to handle increasing API demands seamlessly. This guide covers configuration settings, scaling strategies, and tips for maximizing efficiency.
+- [Coupon](https://developer.nodit.io/guides/coupon.md): Activate your Nodit coupons to unlock discounts and additional API credits. This guide walks you through the simple process of redeeming promotional codes and managing your account benefits efficiently.
+- [Credit](https://developer.nodit.io/guides/credit.md): Activate your credits on Nodit for uninterrupted API usage. This guide explains how to redeem, monitor, and add credits to ensure your projects run smoothly and cost-effectively.
+- [Pricing Plans](https://developer.nodit.io/guides/pricing-plans.md): Explore flexible pricing plans for Nodit's powerful API platform. Choose from a variety of options tailored to developers, from free tiers to scalable solutions for enterprise blockchain applications.
+- [Subscription](https://developer.nodit.io/guides/subscription.md): Learn how to manage your Nodit subscription with ease. This guide provides step-by-step instructions for upgrading, downgrading, or canceling plans to suit your development needs.
+- [Usage Measuring(CU)](https://developer.nodit.io/guides/usage-measuringcu.md): Understand how Nodit calculates API consumption using Compute Units. Learn to monitor usage, stay within plan limits, and optimize API performance with this comprehensive guide.
+- [Nodit for AI - LLM Tools 🤖](https://developer.nodit.io/guides/using-nodit-with-ai-llm-tools.md): Easily integrate Nodit with AI and LLM tools such as Claude, ChatGPT, and AI-powered IDEs. Discover step-by-step guides on connecting Nodit developer documentation to your favorite AI workflows, enhancing your productivity with seamless access to blockchain data and APIs.
+- [Nodit for AI - Nodit MCP✨](https://developer.nodit.io/guides/nodit-mcp.md): Unlock the full potential of AI and blockchain with Nodit MCP Server. Explore the simplest way to access real-time multichain data, automate API usage, and build smarter Web3 applications without complex infrastructure.
+- [Overview](https://developer.nodit.io/guides/nodit-overview.md): Get started with Nodit — a blockchain API platform featuring Elastic Nodes, Web3 Data API, Streams, and Webhooks across 20+ supported networks.
+- [FrontMatter Tester](https://developer.nodit.io/guides/create-a-blog-post.md): This document explains Docusaurus.
+
+## Web3 Data API
+
+> Supported chains: aptos, arbitrum, arc, base, bitcoin, bitcoincash, bnb, chiliz, dogecoin, ethereum, ethereumclassic, giwa, kaia, luniverse, optimism, polygon, tron, xrpl
+> Note: Supported chains, parameters, and response fields may vary per endpoint.
+
+- [Get Asset Holders By ID](https://developer.nodit.io/api/web3-data-api/getAssetHoldersById.md): Retrieve a list of accounts holding a specific on-chain asset, identified by its asset ID.
+- [Get Asset Metadata By IDs](https://developer.nodit.io/api/web3-data-api/getAssetMetadataByIds.md): Fetch metadata for multiple on-chain assets by their IDs, including name, type, and attributes.
+- [Get Asset Metadata By Issuer](https://developer.nodit.io/api/web3-data-api/getAssetMetadataByIssuer.md): Retrieve metadata for all on-chain assets issued by a specific account address.
+- [Get Asset Transfers By Account](https://developer.nodit.io/api/web3-data-api/getAssetTransfersByAccount.md): Get a paginated list of asset transfers sent or received by a specific account address.
+- [Get Asset Transfers By ID](https://developer.nodit.io/api/web3-data-api/getAssetTransfersById.md): Retrieve the transfer history of a specific on-chain asset identified by its asset ID.
+- [Get Asset Transfers Within Range](https://developer.nodit.io/api/web3-data-api/getAssetTransfersWithinRange.md): Fetch all asset transfers that occurred within a specified block or time range.
+- [Get Assets Owned By Account](https://developer.nodit.io/api/web3-data-api/getAssetsOwnedByAccount.md): List all on-chain assets currently owned by a specific account address, with metadata.
+- [Search Asset Metadata By Keyword](https://developer.nodit.io/api/web3-data-api/searchAssetMetadataByKeyword.md): Search for on-chain asset metadata by keyword. Returns matching assets with name and type info.
+- [Get Block by Hash or Number](https://developer.nodit.io/api/web3-data-api/getBlockByHashOrNumber.md): Retrieve full block data by its hash or block number, including transactions and metadata.
+- [Get Blocks Within Range](https://developer.nodit.io/api/web3-data-api/getBlocksWithinRange.md): Fetch all blocks produced within a specified block number range, with detailed block data.
+- [Get Events by Account](https://developer.nodit.io/api/web3-data-api/getEventsByAccount.md): Retrieve events emitted by a specific account address.
+- [Get Events by Type](https://developer.nodit.io/api/web3-data-api/getEventsByType.md): Retrieve events filtered by a specific event type.
+- [Get Gas Price](https://developer.nodit.io/api/web3-data-api/getGasPrice.md): Get the current recommended gas price for submitting transactions on the blockchain.
+- [Get Internal Transactions By Account](https://developer.nodit.io/api/web3-data-api/getInternalTransactionsByAccount.md): Retrieve internal transactions initiated by or sent to a specific account address.
+- [Get Internal Transactions By Transaction Hash](https://developer.nodit.io/api/web3-data-api/getInternalTransactionsByTransactionHash.md): Fetch all internal transactions associated with a specific transaction hash.
+- [Get Ledger By Hash Or Index](https://developer.nodit.io/api/web3-data-api/getLedgerByHashOrIndex.md): Retrieve detailed ledger data by its hash or ledger index, including transaction summaries.
+- [Get Ledgers Within Range](https://developer.nodit.io/api/web3-data-api/getLedgersWithinRange.md): Fetch all ledgers produced within a specified index range, including transaction details.
+- [Get Next Nonce by Account](https://developer.nodit.io/api/web3-data-api/getNextNonceByAccount.md): Get the next available transaction nonce for a specific account address on the blockchain.
+- [Get Total Transaction Count By Account](https://developer.nodit.io/api/web3-data-api/getTotalTransactionCountByAccount.md): Retrieve the total number of transactions sent or received by a specific account address.
+- [Get Transaction By Hash](https://developer.nodit.io/api/web3-data-api/getTransactionByHash.md): Fetch detailed transaction data including status, gas, and logs by its transaction hash.
+- [Get Transaction By Transaction ID](https://developer.nodit.io/api/web3-data-api/getTransactionByTransactionId.md): Retrieve full transaction details by a specific transaction ID on the blockchain.
+- [Get Transaction by Version](https://developer.nodit.io/api/web3-data-api/getTransactionByVersion.md): Retrieve a specific transaction by its version number.
+- [Get Transactions By Account](https://developer.nodit.io/api/web3-data-api/getTransactionsByAccount.md): Get a paginated list of all transactions associated with a specific account address.
+- [Get Transactions By Hashes](https://developer.nodit.io/api/web3-data-api/getTransactionsByHashes.md): Retrieve detailed data for multiple transactions in a single request using their hashes.
+- [Get Transactions By Transaction IDs](https://developer.nodit.io/api/web3-data-api/getTransactionsByTransactionIds.md): Fetch detailed data for multiple transactions in one request using their transaction IDs.
+- [Get Transactions By Versions](https://developer.nodit.io/api/web3-data-api/getTransactionsByVersions.md): Retrieve multiple transactions by their version numbers.
+- [Get Transactions In Block](https://developer.nodit.io/api/web3-data-api/getTransactionsInBlock.md): Retrieve all transactions included in a specific block, identified by hash or block number.
+- [Get Transactions In Ledger](https://developer.nodit.io/api/web3-data-api/getTransactionsInLedger.md): Fetch all transactions included in a specific ledger, identified by its hash or index.
+- [Get Unspent Transaction Outputs By Account](https://developer.nodit.io/api/web3-data-api/getUnspentTransactionOutputsByAccount.md): Get unspent transaction outputs (UTXOs) associated with a specific account address.
+- [Is Contract](https://developer.nodit.io/api/web3-data-api/isContract.md): Check whether a given address is a smart contract or an externally owned account (EOA).
+- [Search Events](https://developer.nodit.io/api/web3-data-api/searchEvents.md): Search for on-chain contract events by topic, address, and block range with pagination support.
+- [Get Address By ENS Name](https://developer.nodit.io/api/web3-data-api/getAddressByEnsName.md): Resolve an ENS (Ethereum Name Service) domain name to its corresponding wallet address.
+- [Get ENS Name By Address](https://developer.nodit.io/api/web3-data-api/getEnsNameByAddress.md): Reverse-resolve a wallet address to its primary ENS (Ethereum Name Service) domain name.
+- [Get ENS Record By Name](https://developer.nodit.io/api/web3-data-api/getEnsRecordByName.md): Retrieve full ENS record details for a specific domain name, including resolver and records.
+- [Get ENS Records By Account](https://developer.nodit.io/api/web3-data-api/getEnsRecordsByAccount.md): Fetch all ENS (Ethereum Name Service) records associated with a specific account address.
+- [Get Native Balance by Account](https://developer.nodit.io/api/web3-data-api/getNativeBalanceByAccount.md): Retrieve the native token balance (e.g., ETH, MATIC) for a specific account address.
+- [Get Native Holders](https://developer.nodit.io/api/web3-data-api/getNativeHolders.md): Get a list of accounts holding native tokens, with balances above a specified threshold.
+- [Get Native Token Balance by Account](https://developer.nodit.io/api/web3-data-api/getNativeTokenBalanceByAccount.md): Retrieve the native token balance for a specific account on non-EVM chains like Aptos.
+- [Get Native Token Balance Changes By Account](https://developer.nodit.io/api/web3-data-api/getNativeTokenBalanceChangesByAccount.md): Track native token balance changes for an account over a specified time or block range.
+- [Get Native Token Transfers By Account](https://developer.nodit.io/api/web3-data-api/getNativeTokenTransfersByAccount.md): Retrieve native token transfers sent or received by a specific account address.
+- [Get Native Transfers By Account](https://developer.nodit.io/api/web3-data-api/getNativeTransfersByAccount.md): Fetch all native currency transfers associated with a specific account address.
+- [Get Native Transfers Within Range](https://developer.nodit.io/api/web3-data-api/getNativeTransfersWithinRange.md): Get all native currency transfers that occurred within a specified block or time range.
+- [Get NFT Contract Metadata by Contracts](https://developer.nodit.io/api/web3-data-api/getNftContractMetadataByContracts.md): Fetch NFT contract metadata including name, symbol, and standards for multiple contracts.
+- [Get NFT Contracts by Account](https://developer.nodit.io/api/web3-data-api/getNftContractsByAccount.md): Retrieve all NFT contracts an account has interacted with, including balances per contract.
+- [Get NFT Holders by Contract](https://developer.nodit.io/api/web3-data-api/getNftHoldersByContract.md): Get a paginated list of all holders for a specific NFT contract address.
+- [Get NFT Holders by Token ID](https://developer.nodit.io/api/web3-data-api/getNftHoldersByTokenId.md): Retrieve all accounts currently holding a specific NFT identified by contract and token ID.
+- [Get NFT Metadata by Contract](https://developer.nodit.io/api/web3-data-api/getNftMetadataByContract.md): Fetch metadata for all NFTs in a specific contract, including token IDs, images, and traits.
+- [Get NFT Metadata by Token IDs](https://developer.nodit.io/api/web3-data-api/getNftMetadataByTokenIds.md): Retrieve metadata for specific NFTs using contract address and token IDs in a single request.
+- [Get NFT Transfers By Account](https://developer.nodit.io/api/web3-data-api/getNftTransfersByAccount.md): Get a paginated list of NFT transfers sent or received by a specific account address.
+- [Get NFT Transfers By Contract](https://developer.nodit.io/api/web3-data-api/getNftTransfersByContract.md): Retrieve the transfer history of all NFTs within a specific contract address.
+- [Get NFT Transfers By TokenId](https://developer.nodit.io/api/web3-data-api/getNftTransfersByTokenId.md): Fetch the complete transfer history for a specific NFT identified by contract and token ID.
+- [Get NFT Transfers Within Range](https://developer.nodit.io/api/web3-data-api/getNftTransfersWithinRange.md): Get all NFT transfers that occurred within a specified block number or time range.
+- [Get NFTs Owned By Account](https://developer.nodit.io/api/web3-data-api/getNftsOwnedByAccount.md): Retrieve all NFTs currently owned by a specific account address, with metadata included.
+- [Search NFT Contract Metadata By Keyword](https://developer.nodit.io/api/web3-data-api/searchNftContractMetadataByKeyword.md): Search for NFT contracts by keyword. Returns matching contracts with name, symbol, and metadata.
+- [Sync Nft Metadata](https://developer.nodit.io/api/web3-data-api/syncNftMetadata.md): Trigger a metadata refresh for a specific NFT to ensure the latest on-chain data is indexed.
+- [Get Account Stats](https://developer.nodit.io/api/web3-data-api/getAccountStats.md): Retrieve aggregated activity statistics for a specific account, including transaction and token data.
+- [Get Daily Active Accounts Stats By Contract](https://developer.nodit.io/api/web3-data-api/getDailyActiveAccountsStatsByContract.md): Fetch daily active account statistics for a specific contract over a given date range.
+- [Get Daily Transactions Stats](https://developer.nodit.io/api/web3-data-api/getDailyTransactionsStats.md): Get daily transaction statistics for the entire blockchain network over a specified date range.
+- [Get Daily Transactions Stats By Contract](https://developer.nodit.io/api/web3-data-api/getDailyTransactionsStatsByContract.md): Retrieve daily transaction statistics for a specific contract address over a given date range.
+- [Get Hourly Active Accounts Stats](https://developer.nodit.io/api/web3-data-api/getHourlyActiveAccountsStats.md): Fetch hourly active account statistics for the blockchain network over a specified time range.
+- [Get Hourly Active Accounts Stats By Contract](https://developer.nodit.io/api/web3-data-api/getHourlyActiveAccountsStatsByContract.md): Get hourly active account statistics for a specific contract address over a time range.
+- [Get Hourly Transactions Stats](https://developer.nodit.io/api/web3-data-api/getHourlyTransactionsStats.md): Retrieve hourly transaction statistics for the blockchain network over a specified time range.
+- [Get Hourly Transactions Stats By Contract](https://developer.nodit.io/api/web3-data-api/getHourlyTransactionsStatsByContract.md): Fetch hourly transaction statistics for a specific smart contract over a given time range.
+- [Get Token Accounts by Asset Type](https://developer.nodit.io/api/web3-data-api/getTokenAccountsByAssetType.md): Retrieve accounts holding a specific asset type.
+- [Get Token Allowance](https://developer.nodit.io/api/web3-data-api/getTokenAllowance.md): Retrieve the ERC20 token spending allowance granted by a token owner to a spender address.
+- [Get Token Balance Changes by Account](https://developer.nodit.io/api/web3-data-api/getTokenBalanceChangesByAccount.md): Track ERC20 token balance changes for a specific account over a block or time range.
+- [Get Token Balance Changes by Asset Type](https://developer.nodit.io/api/web3-data-api/getTokenBalanceChangesByAssetType.md): Retrieve token balance change history filtered by asset type.
+- [Get Token Balance Changes Within Range](https://developer.nodit.io/api/web3-data-api/getTokenBalanceChangesWithinRange.md): Retrieve token balance changes within a specified block range.
+- [Get Token Contract Metadata by Contracts](https://developer.nodit.io/api/web3-data-api/getTokenContractMetadataByContracts.md): Fetch ERC20 token contract metadata including name, symbol, and decimals for multiple contracts.
+- [Get Token Holders By Contract](https://developer.nodit.io/api/web3-data-api/getTokenHoldersByContract.md): Get a paginated list of all accounts holding a specific ERC20 token contract.
+- [Get Token Metadata by Asset Types](https://developer.nodit.io/api/web3-data-api/getTokenMetadataByAssetTypes.md): Retrieve token metadata for specified asset types.
+- [Get Token Pair by Asset Type](https://developer.nodit.io/api/web3-data-api/getTokenPairByAssetType.md): Retrieve token pair information for a specific asset type.
+- [Get Token Prices by Contracts](https://developer.nodit.io/api/web3-data-api/getTokenPricesByContracts.md): Retrieve on-chain market prices for multiple ERC20 token contracts. Supports up to 100 contracts.
+- [Get Token Transfers by Account](https://developer.nodit.io/api/web3-data-api/getTokenTransfersByAccount.md): Get a paginated list of ERC20 token transfers sent or received by a specific account address.
+- [Get Token Transfers by Contract](https://developer.nodit.io/api/web3-data-api/getTokenTransfersByContract.md): Retrieve the transfer history of a specific ERC20 token contract with pagination support.
+- [Get Token Transfers By Currency And Issuer](https://developer.nodit.io/api/web3-data-api/getTokenTransfersByCurrencyAndIssuer.md): Fetch token transfers filtered by currency type and issuer address on non-EVM blockchains.
+- [Get Token Transfers Within Range](https://developer.nodit.io/api/web3-data-api/getTokenTransfersWithinRange.md): Get all ERC20 token transfers that occurred within a specified block number or time range.
+- [Get Tokens Owned By Account](https://developer.nodit.io/api/web3-data-api/getTokensOwnedByAccount.md): Retrieve all ERC20 tokens and balances currently held by a specific account address.
+- [Search Token Contract Metadata by Keyword](https://developer.nodit.io/api/web3-data-api/searchTokenContractMetadataByKeyword.md): Search for ERC20 token contracts by keyword. Returns matching contracts with metadata.
+
+## Webhook API
+
+> Supported chains: aptos, arbitrum, arc, base, bnb, ethereum, giwa, kaia, optimism, polygon
+> Note: Supported chains, parameters, and response fields may vary per endpoint.
+
+- [Create Webhook](https://developer.nodit.io/api/webhook-api/createWebhook.md): Create a new webhook subscription to receive real-time blockchain event notifications to your endpoint.
+- [Get Webhook](https://developer.nodit.io/api/webhook-api/getWebhook.md): Retrieve details of a specific webhook subscription by its subscription ID.
+- [Delete Webhook](https://developer.nodit.io/api/webhook-api/deleteWebhook.md): Delete an existing webhook subscription by its subscription ID to stop receiving event notifications.
+- [Update Webhook](https://developer.nodit.io/api/webhook-api/updateWebhook.md): Update the configuration of an existing webhook subscription, including URL and event filters.
+- [Get Webhook History](https://developer.nodit.io/api/webhook-api/getWebhookHistory.md): Retrieve the delivery history of a webhook subscription, including event logs and response statuses.
+
+## Multichain API
+
+> Supported chains: aptos, arbitrum, arc, base, bitcoin, bitcoincash, bnb, chiliz, dogecoin, ethereum, ethereumclassic, giwa, kaia, luniverse, optimism, polygon, tron, xrpl
+> Note: Supported chains, parameters, and response fields may vary per endpoint.
+
+- [Lookup entities](https://developer.nodit.io/api/multichain-api/lookupEntities.md): Look up blockchain entities such as addresses and transaction hashes across multiple chains in one request.
+
+## Node API
+
+### evm
+
+> EVM-compatible chains sharing standard JSON-RPC methods (eth, debug, net, trace, web3) plus chain-specific namespaces (bor, kaia, klay, op-stack).
+> Supported chains: arbitrum, arc, avalanche, base, bnb, ethereum, giwa, kaia, luniverse, optimism, polygon
+> Note: Available methods, parameters, and response fields may vary per chain.
+
+- [`debug_traceBlockByHash`](https://developer.nodit.io/api/node-api/evm/debug_traceblockbyhash.md): Replay and trace all transactions in a block identified by hash for debugging purposes.
+- [`debug_traceBlockByNumber`](https://developer.nodit.io/api/node-api/evm/debug_traceblockbynumber.md): Replay and trace all transactions in a block identified by number for debugging purposes.
+- [`debug_traceCall`](https://developer.nodit.io/api/node-api/evm/debug_tracecall.md): Trace a call execution against a specific block to debug smart contract interactions.
+- [`debug_traceTransaction`](https://developer.nodit.io/api/node-api/evm/debug_tracetransaction.md): Replay and trace a specific transaction to inspect execution details and debug issues.
+- [`eth_blockNumber`](https://developer.nodit.io/api/node-api/evm/eth_blocknumber.md): Returns the number of the most recent block.
+- [`eth_call`](https://developer.nodit.io/api/node-api/evm/eth_call.md): Execute a read-only smart contract call without submitting a transaction to the blockchain.
+- [`eth_chainId`](https://developer.nodit.io/api/node-api/evm/eth_chainid.md): Returns the chain ID of the current EVM network, used for transaction signing and replay protection.
+- [`eth_createAccessList`](https://developer.nodit.io/api/node-api/evm/eth_createaccesslist.md): Generate an access list for a transaction to optimize gas usage .
+- [`eth_estimateGas`](https://developer.nodit.io/api/node-api/evm/eth_estimategas.md): Estimate the gas required to execute a transaction or contract call on the EVM network.
+- [`eth_feeHistory`](https://developer.nodit.io/api/node-api/evm/eth_feehistory.md): Retrieve historical gas fee data including base fee and priority fee per block for EVM networks.
+- [`eth_gasPrice`](https://developer.nodit.io/api/node-api/evm/eth_gasprice.md): Returns the current gas price in wei recommended for timely transaction inclusion on the network.
+- [`eth_getBalance`](https://developer.nodit.io/api/node-api/evm/eth_getbalance.md): Returns the native token balance in wei for a specific address at a given block on the EVM network.
+- [`eth_getBlockByHash`](https://developer.nodit.io/api/node-api/evm/eth_getblockbyhash.md): Retrieve full block details including transactions by block hash.
+- [`eth_getBlockByNumber`](https://developer.nodit.io/api/node-api/evm/eth_getblockbynumber.md): Retrieve full block details including transactions by block number.
+- [`eth_getBlockReceipts`](https://developer.nodit.io/api/node-api/evm/eth_getblockreceipts.md): Fetch all transaction receipts for a specific block.
+- [`eth_getBlockTransactionCountByHash`](https://developer.nodit.io/api/node-api/evm/eth_getblocktransactioncountbyhash.md): Returns the number of transactions in a block identified by its block hash.
+- [`eth_getBlockTransactionCountByNumber`](https://developer.nodit.io/api/node-api/evm/eth_getblocktransactioncountbynumber.md): Returns the number of transactions in a block identified by its block number.
+- [`eth_getCode`](https://developer.nodit.io/api/node-api/evm/eth_getcode.md): Retrieve the bytecode deployed at a smart contract address.
+- [`eth_getFilterChanges`](https://developer.nodit.io/api/node-api/evm/eth_getfilterchanges.md): Poll for new logs, blocks, or pending transactions since the last poll for an active filter.
+- [`eth_getFilterLogs`](https://developer.nodit.io/api/node-api/evm/eth_getfilterlogs.md): Retrieve all logs matching the criteria of an existing filter.
+- [`eth_getLogs`](https://developer.nodit.io/api/node-api/evm/eth_getlogs.md): Retrieve event logs matching specified filter criteria including address, topics, and block range.
+- [`eth_getProof`](https://developer.nodit.io/api/node-api/evm/eth_getproof.md): Generate a Merkle proof for account storage and state.
+- [`eth_getStorageAt`](https://developer.nodit.io/api/node-api/evm/eth_getstorageat.md): Read the value stored at a specific storage slot of a smart contract address.
+- [`eth_getTransactionByBlockHashAndIndex`](https://developer.nodit.io/api/node-api/evm/eth_gettransactionbyblockhashandindex.md): Retrieve a transaction by its position index within a block identified by block hash.
+- [`eth_getTransactionByBlockNumberAndIndex`](https://developer.nodit.io/api/node-api/evm/eth_gettransactionbyblocknumberandindex.md): Retrieve a transaction by its position index within a block identified by block number.
+- [`eth_getTransactionByHash`](https://developer.nodit.io/api/node-api/evm/eth_gettransactionbyhash.md): Fetch detailed transaction data including gas, value, and input by transaction hash.
+- [`eth_getTransactionCount`](https://developer.nodit.io/api/node-api/evm/eth_gettransactioncount.md): Returns the number of transactions sent from an address, used to determine the next nonce.
+- [`eth_getTransactionReceipt`](https://developer.nodit.io/api/node-api/evm/eth_gettransactionreceipt.md): Retrieve the transaction receipt including status, gas used, and logs after confirmation.
+- [`eth_getUncleByBlockHashAndIndex`](https://developer.nodit.io/api/node-api/evm/eth_getunclebyblockhashandindex.md): Returns information about an uncle block by block hash and uncle index position.
+- [`eth_getUncleByBlockNumberAndIndex`](https://developer.nodit.io/api/node-api/evm/eth_getunclebyblocknumberandindex.md): Returns information about an uncle block by block number and uncle index position.
+- [`eth_getUncleCountByBlockHash`](https://developer.nodit.io/api/node-api/evm/eth_getunclecountbyblockhash.md): Returns the number of uncle blocks included in the block identified by its hash.
+- [`eth_getUncleCountByBlockNumber`](https://developer.nodit.io/api/node-api/evm/eth_getunclecountbyblocknumber.md): Returns the number of uncle blocks at the specified block number.
+- [`eth_maxPriorityFeePerGas`](https://developer.nodit.io/api/node-api/evm/eth_maxpriorityfeepergas.md): Returns the recommended maximum priority fee per gas (miner tip) for EIP-1559 transactions.
+- [`eth_newBlockFilter`](https://developer.nodit.io/api/node-api/evm/eth_newblockfilter.md): Create a filter to receive notifications when new blocks are added to the blockchain.
+- [`eth_newFilter`](https://developer.nodit.io/api/node-api/evm/eth_newfilter.md): Create an event log filter with specified topics, address, and block range for polling.
+- [`eth_newPendingTransactionFilter`](https://developer.nodit.io/api/node-api/evm/eth_newpendingtransactionfilter.md): Create a filter to receive hashes of new pending transactions in the mempool.
+- [`eth_sendRawTransaction`](https://developer.nodit.io/api/node-api/evm/eth_sendrawtransaction.md): Submit a signed and RLP-encoded raw transaction to broadcast.
+- [`eth_uninstallFilter`](https://developer.nodit.io/api/node-api/evm/eth_uninstallfilter.md): Uninstall and remove an active event filter identified by its filter ID.
+- [`net_listening`](https://developer.nodit.io/api/node-api/evm/net_listening.md): Returns whether the node is actively listening for network connections on the EVM network.
+- [`net_version`](https://developer.nodit.io/api/node-api/evm/net_version.md): Returns the current network ID as a string.
+- [`trace_block`](https://developer.nodit.io/api/node-api/evm/trace_block.md): Retrieve execution traces for all transactions in a specified block.
+- [`trace_call`](https://developer.nodit.io/api/node-api/evm/trace_call.md): Execute and trace a call against the blockchain state without creating a transaction.
+- [`trace_filter`](https://developer.nodit.io/api/node-api/evm/trace_filter.md): Filter and retrieve transaction traces matching specified criteria including addresses and block range.
+- [`trace_get`](https://developer.nodit.io/api/node-api/evm/trace_get.md): Retrieve a specific trace from a transaction using the transaction hash and trace address.
+- [`trace_replayBlockTransactions`](https://developer.nodit.io/api/node-api/evm/trace_replayblocktransactions.md): Replay and trace all transactions in a block to analyze execution and state changes.
+- [`trace_replayTransaction`](https://developer.nodit.io/api/node-api/evm/trace_replaytransaction.md): Replay a specific transaction and retrieve detailed execution trace data.
+- [`trace_transaction`](https://developer.nodit.io/api/node-api/evm/trace_transaction.md): Retrieve the execution trace for a specific transaction identified by its hash.
+- [`web3_clientVersion`](https://developer.nodit.io/api/node-api/evm/web3_clientversion.md): Returns the current client version and implementation details of the connected Ethereum node.
+- [`web3_sha3`](https://developer.nodit.io/api/node-api/evm/web3_sha3.md): Compute the Keccak-256 hash of the given data using the Ethereum hashing algorithm.
+- [`kaia_blockNumber`](https://developer.nodit.io/api/node-api/evm/kaia_blocknumber.md): Returns the number of the most recent block on the Kaia blockchain network.
+- [`kaia_call`](https://developer.nodit.io/api/node-api/evm/kaia_call.md): Execute a read-only smart contract call on the Kaia network without submitting a transaction.
+- [`kaia_chainID`](https://developer.nodit.io/api/node-api/evm/kaia_chainid.md): Returns the chain ID of the Kaia network for transaction signing and replay protection.
+- [`kaia_createAccessList`](https://developer.nodit.io/api/node-api/evm/kaia_createaccesslist.md): Generate an access list for a transaction to optimize gas usage on the Kaia network.
+- [`kaia_estimateGas`](https://developer.nodit.io/api/node-api/evm/kaia_estimategas.md): Estimate the gas required to execute a transaction or contract call on the Kaia network.
+- [`kaia_feeHistory`](https://developer.nodit.io/api/node-api/evm/kaia_feehistory.md): Retrieve historical gas fee data including base fee and priority fee per block on the Kaia network.
+- [`kaia_gasPrice`](https://developer.nodit.io/api/node-api/evm/kaia_gasprice.md): Returns the current gas price in peb recommended for timely transaction inclusion on Kaia.
+- [`kaia_getBalance`](https://developer.nodit.io/api/node-api/evm/kaia_getbalance.md): Returns the KAIA token balance in peb for a specific address at a given block on the Kaia network.
+- [`kaia_getBlockByHash`](https://developer.nodit.io/api/node-api/evm/kaia_getblockbyhash.md): Retrieve full block details including transactions by block hash on the Kaia network.
+- [`kaia_getBlockByNumber`](https://developer.nodit.io/api/node-api/evm/kaia_getblockbynumber.md): Retrieve full block details including transactions by block number on the Kaia network.
+- [`kaia_getBlockReceipts`](https://developer.nodit.io/api/node-api/evm/kaia_getblockreceipts.md): Fetch all transaction receipts for a specific block on the Kaia blockchain network.
+- [`kaia_getBlockTransactionCountByHash`](https://developer.nodit.io/api/node-api/evm/kaia_getblocktransactioncountbyhash.md): Returns the number of transactions in a Kaia block identified by its block hash.
+- [`kaia_getBlockTransactionCountByNumber`](https://developer.nodit.io/api/node-api/evm/kaia_getblocktransactioncountbynumber.md): Returns the number of transactions in a Kaia block identified by its block number.
+- [`kaia_getCode`](https://developer.nodit.io/api/node-api/evm/kaia_getcode.md): Retrieve the bytecode deployed at a smart contract address on the Kaia network.
+- [`kaia_getFilterChanges`](https://developer.nodit.io/api/node-api/evm/kaia_getfilterchanges.md): Poll for new logs or blocks since the last poll for an active filter on the Kaia network.
+- [`kaia_getFilterLogs`](https://developer.nodit.io/api/node-api/evm/kaia_getfilterlogs.md): Retrieve all logs matching the criteria of an existing filter on the Kaia network.
+- [`kaia_getLogs`](https://developer.nodit.io/api/node-api/evm/kaia_getlogs.md): Retrieve event logs matching specified filter criteria on the Kaia blockchain network.
+- [`kaia_getProof`](https://developer.nodit.io/api/node-api/evm/kaia_getproof.md): Generate a Merkle proof for account storage and state on the Kaia blockchain.
+- [`kaia_getRewards`](https://developer.nodit.io/api/node-api/evm/kaia_getrewards.md): Retrieve block reward distribution details for a specific block on the Kaia network.
+- [`kaia_getStorageAt`](https://developer.nodit.io/api/node-api/evm/kaia_getstorageat.md): Read the value stored at a specific storage slot of a smart contract on the Kaia network.
+- [`kaia_getTransactionByBlockHashAndIndex`](https://developer.nodit.io/api/node-api/evm/kaia_gettransactionbyblockhashandindex.md): Retrieve a Kaia transaction by its index within a block identified by block hash.
+- [`kaia_getTransactionByBlockNumberAndIndex`](https://developer.nodit.io/api/node-api/evm/kaia_gettransactionbyblocknumberandindex.md): Retrieve a Kaia transaction by its index within a block identified by block number.
+- [`kaia_getTransactionByHash`](https://developer.nodit.io/api/node-api/evm/kaia_gettransactionbyhash.md): Fetch detailed transaction data by transaction hash on the Kaia blockchain network.
+- [`kaia_getTransactionCount`](https://developer.nodit.io/api/node-api/evm/kaia_gettransactioncount.md): Returns the number of transactions sent from an address on the Kaia network (nonce).
+- [`kaia_getTransactionReceipt`](https://developer.nodit.io/api/node-api/evm/kaia_gettransactionreceipt.md): Retrieve the receipt for a completed transaction by its hash on the Kaia network.
+- [`kaia_maxPriorityFeePerGas`](https://developer.nodit.io/api/node-api/evm/kaia_maxpriorityfeepergas.md): Returns the recommended maximum priority fee per gas for EIP-1559 transactions on Kaia.
+- [`kaia_newBlockFilter`](https://developer.nodit.io/api/node-api/evm/kaia_newblockfilter.md): Create a filter to receive notifications when new blocks are added to the Kaia network.
+- [`kaia_newFilter`](https://developer.nodit.io/api/node-api/evm/kaia_newfilter.md): Create an event log filter with specified criteria for polling on the Kaia blockchain.
+- [`kaia_newPendingTransactionFilter`](https://developer.nodit.io/api/node-api/evm/kaia_newpendingtransactionfilter.md): Create a filter to receive hashes of new pending transactions on the Kaia network.
+- [`kaia_sendRawTransaction`](https://developer.nodit.io/api/node-api/evm/kaia_sendrawtransaction.md): Submit a signed raw transaction to the Kaia network for broadcast and execution.
+- [`kaia_uninstallFilter`](https://developer.nodit.io/api/node-api/evm/kaia_uninstallfilter.md): Uninstall and remove an active event filter by its ID on the Kaia network.
+- [`klay_blockNumber`](https://developer.nodit.io/api/node-api/evm/klay_blocknumber.md): Returns the number of the most recent block on the Klaytn/Kaia legacy network.
+- [`klay_call`](https://developer.nodit.io/api/node-api/evm/klay_call.md): Execute a read-only smart contract call on the Klaytn/Kaia network without a transaction.
+- [`klay_chainID`](https://developer.nodit.io/api/node-api/evm/klay_chainid.md): Returns the chain ID of the Klaytn/Kaia network for transaction signing.
+- [`klay_createAccessList`](https://developer.nodit.io/api/node-api/evm/klay_createaccesslist.md): Generate an access list for a transaction to optimize gas usage on the Klaytn network.
+- [`klay_estimateGas`](https://developer.nodit.io/api/node-api/evm/klay_estimategas.md): Estimate the gas required to execute a transaction or contract call on the Klaytn network.
+- [`klay_feeHistory`](https://developer.nodit.io/api/node-api/evm/klay_feehistory.md): Retrieve historical gas fee data per block on the Klaytn/Kaia legacy network.
+- [`klay_gasPrice`](https://developer.nodit.io/api/node-api/evm/klay_gasprice.md): Returns the current gas price in peb for timely transaction inclusion on the Klaytn network.
+- [`klay_getBalance`](https://developer.nodit.io/api/node-api/evm/klay_getbalance.md): Returns the KLAY token balance in peb for a specific address at a given block.
+- [`klay_getBlockByHash`](https://developer.nodit.io/api/node-api/evm/klay_getblockbyhash.md): Retrieve full block details including transactions by block hash on the Klaytn network.
+- [`klay_getBlockByNumber`](https://developer.nodit.io/api/node-api/evm/klay_getblockbynumber.md): Retrieve full block details including transactions by block number on the Klaytn network.
+- [`klay_getBlockReceipts`](https://developer.nodit.io/api/node-api/evm/klay_getblockreceipts.md): Fetch all transaction receipts for a specific block on the Klaytn blockchain network.
+- [`klay_getBlockTransactionCountByHash`](https://developer.nodit.io/api/node-api/evm/klay_getblocktransactioncountbyhash.md): Returns the number of transactions in a Klaytn block identified by its block hash.
+- [`klay_getBlockTransactionCountByNumber`](https://developer.nodit.io/api/node-api/evm/klay_getblocktransactioncountbynumber.md): Returns the number of transactions in a Klaytn block identified by its block number.
+- [`klay_getCode`](https://developer.nodit.io/api/node-api/evm/klay_getcode.md): Retrieve the bytecode deployed at a smart contract address on the Klaytn network.
+- [`klay_getFilterChanges`](https://developer.nodit.io/api/node-api/evm/klay_getfilterchanges.md): Poll for new logs or blocks since the last poll for an active filter on the Klaytn network.
+- [`klay_getFilterLogs`](https://developer.nodit.io/api/node-api/evm/klay_getfilterlogs.md): Retrieve all logs matching the criteria of an existing filter on the Klaytn network.
+- [`klay_getLogs`](https://developer.nodit.io/api/node-api/evm/klay_getlogs.md): Retrieve event logs matching specified filter criteria on the Klaytn blockchain network.
+- [`klay_getProof`](https://developer.nodit.io/api/node-api/evm/klay_getproof.md): Generate a Merkle proof for account storage and state on the Klaytn blockchain.
+- [`klay_getStorageAt`](https://developer.nodit.io/api/node-api/evm/klay_getstorageat.md): Read the value stored at a specific storage slot of a smart contract on the Klaytn network.
+- [`klay_getTransactionByBlockHashAndIndex`](https://developer.nodit.io/api/node-api/evm/klay_gettransactionbyblockhashandindex.md): Retrieve a Klaytn transaction by its index within a block identified by block hash.
+- [`klay_getTransactionByBlockNumberAndIndex`](https://developer.nodit.io/api/node-api/evm/klay_gettransactionbyblocknumberandindex.md): Retrieve a Klaytn transaction by its index within a block identified by block number.
+- [`klay_getTransactionByHash`](https://developer.nodit.io/api/node-api/evm/klay_gettransactionbyhash.md): Fetch detailed transaction data by transaction hash on the Klaytn blockchain network.
+- [`klay_getTransactionCount`](https://developer.nodit.io/api/node-api/evm/klay_gettransactioncount.md): Returns the number of transactions sent from an address on the Klaytn network (nonce).
+- [`klay_getTransactionReceipt`](https://developer.nodit.io/api/node-api/evm/klay_gettransactionreceipt.md): Retrieve the receipt for a completed transaction by its hash on the Klaytn network.
+- [`klay_maxPriorityFeePerGas`](https://developer.nodit.io/api/node-api/evm/klay_maxpriorityfeepergas.md): Returns the recommended maximum priority fee per gas for transactions on the Klaytn network.
+- [`klay_newBlockFilter`](https://developer.nodit.io/api/node-api/evm/klay_newblockfilter.md): Create a filter to receive notifications when new blocks are added to the Klaytn network.
+- [`klay_newFilter`](https://developer.nodit.io/api/node-api/evm/klay_newfilter.md): Create an event log filter with specified criteria for polling on the Klaytn blockchain.
+- [`klay_newPendingTransactionFilter`](https://developer.nodit.io/api/node-api/evm/klay_newpendingtransactionfilter.md): Create a filter to receive hashes of new pending transactions on the Klaytn network.
+- [`klay_sendRawTransaction`](https://developer.nodit.io/api/node-api/evm/klay_sendrawtransaction.md): Submit a signed raw transaction to the Klaytn network for broadcast and execution.
+- [`klay_uninstallFilter`](https://developer.nodit.io/api/node-api/evm/klay_uninstallfilter.md): Uninstall and remove an active event filter by its ID on the Klaytn network.
+- [`optimism_outputAtBlock`](https://developer.nodit.io/api/node-api/evm/optimism_outputatblock.md): Retrieve the L2 output root proposal at a specific block number on the Optimism network.
+- [`optimism_rollupConfig`](https://developer.nodit.io/api/node-api/evm/optimism_rollupconfig.md): Retrieve the rollup configuration parameters for the Optimism L2 network.
+- [`bor_getAuthor`](https://developer.nodit.io/api/node-api/evm/bor_getauthor.md): Returns the author (validator) of a specific block on the Polygon/Bor network.
+- [`bor_getCurrentProposer`](https://developer.nodit.io/api/node-api/evm/bor_getcurrentproposer.md): Returns the address of the current block proposer on the Polygon/Bor network.
+- [`bor_getCurrentValidators`](https://developer.nodit.io/api/node-api/evm/bor_getcurrentvalidators.md): Returns the list of current validators participating in the Polygon/Bor consensus.
+- [`bor_getSignersAtHash`](https://developer.nodit.io/api/node-api/evm/bor_getsignersathash.md): Returns the list of signers for a specific block identified by its hash on the Bor network.
+
+### aptos
+
+> Aptos REST API methods.
+> Supported chains: aptos
+> Note: Available methods, parameters, and response fields may vary per chain.
+
+- [`Get account`](https://developer.nodit.io/api/node-api/aptos/get-account.md): Retrieve account details including sequence number and authentication key for an Aptos address.
+- [`Get account balance`](https://developer.nodit.io/api/node-api/aptos/get-account-balance.md): Retrieve the APT coin balance for a specific account address on the Aptos blockchain.
+- [`Get account module`](https://developer.nodit.io/api/node-api/aptos/get-account-module.md): Fetch a specific Move module deployed at an account address on the Aptos blockchain.
+- [`Get account modules`](https://developer.nodit.io/api/node-api/aptos/get-account-modules.md): Retrieve all Move modules deployed at a specific account address on the Aptos blockchain.
+- [`Get account resource`](https://developer.nodit.io/api/node-api/aptos/get-account-resource.md): Fetch a specific Move resource stored at an account address on the Aptos blockchain.
+- [`Get account resources`](https://developer.nodit.io/api/node-api/aptos/get-account-resources.md): Retrieve all Move resources stored at a specific account address on the Aptos blockchain.
+- [`Get blocks by height`](https://developer.nodit.io/api/node-api/aptos/get-blocks-by-height.md): Retrieve block data for a specific block height on the Aptos blockchain.
+- [`Get blocks by version`](https://developer.nodit.io/api/node-api/aptos/get-blocks-by-version.md): Retrieve block data containing a specific transaction version on the Aptos blockchain.
+- [`Get events by creation number`](https://developer.nodit.io/api/node-api/aptos/get-events-by-creation-number.md): Fetch events from an Aptos account by event handle creation number and sequence.
+- [`Get events by event handle`](https://developer.nodit.io/api/node-api/aptos/get-events-by-event-handle.md): Retrieve events from a specific event handle defined in an Aptos Move resource.
+- [`Get ledger info`](https://developer.nodit.io/api/node-api/aptos/get-ledger-info.md): Retrieve the latest ledger information including chain ID, epoch, and block height for Aptos.
+- [`Get raw table item`](https://developer.nodit.io/api/node-api/aptos/get-raw-table-item.md): Fetch a raw value from an Aptos Move Table storage using the table handle and key.
+- [`Get table item`](https://developer.nodit.io/api/node-api/aptos/get-table-item.md): Fetch a typed value from an Aptos Move Table storage using the table handle and key.
+- [`Encode submission`](https://developer.nodit.io/api/node-api/aptos/encode-submission.md): Encode a transaction submission payload for signing before submitting it to the Aptos blockchain.
+- [`Estimate gas price`](https://developer.nodit.io/api/node-api/aptos/estimate-gas-price.md): Estimate the current gas price for submitting transactions on the Aptos blockchain network.
+- [`Get account transactions`](https://developer.nodit.io/api/node-api/aptos/get-account-transactions.md): Get a list of transactions initiated by a specific account address on the Aptos blockchain.
+- [`Get transaction by hash`](https://developer.nodit.io/api/node-api/aptos/get-transaction-by-hash.md): Retrieve transaction details by its hash from the Aptos blockchain.
+- [`Get transaction by version`](https://developer.nodit.io/api/node-api/aptos/get-transaction-by-version.md): Retrieve transaction details by its version number from the Aptos blockchain.
+- [`Get transaction summaries`](https://developer.nodit.io/api/node-api/aptos/get-transaction-summaries.md): Fetch a list of transaction summaries from the Aptos blockchain with pagination support.
+- [`Get transactions`](https://developer.nodit.io/api/node-api/aptos/get-transactions.md): Retrieve a paginated list of recent transactions from the Aptos blockchain.
+- [`Simulate transaction`](https://developer.nodit.io/api/node-api/aptos/simulate-transaction.md): Simulate an Aptos transaction to estimate gas usage and validate it without submitting.
+- [`Submit batch transactions`](https://developer.nodit.io/api/node-api/aptos/submit-batch-transactions.md): Submit multiple signed transactions in a single request to the Aptos blockchain.
+- [`Submit transaction`](https://developer.nodit.io/api/node-api/aptos/submit-transaction.md): Submit a signed transaction to the Aptos blockchain network for execution.
+- [`Wait for transaction by hash`](https://developer.nodit.io/api/node-api/aptos/wait-for-transaction-by-hash.md): Poll and wait until a specific transaction hash is confirmed on the Aptos blockchain.
+- [`Execute view function of a module`](https://developer.nodit.io/api/node-api/aptos/execute-view-function-of-a-module.md): Execute a Move module view function on the Aptos blockchain without modifying state.
+
+### solana
+
+> Solana JSON-RPC methods.
+> Supported chains: solana
+> Note: Available methods, parameters, and response fields may vary per chain.
+
+- [`getAccountInfo`](https://developer.nodit.io/api/node-api/solana/getaccountinfo.md): Retrieve account information including data, owner, and lamport balance for a Solana address.
+- [`getBalance`](https://developer.nodit.io/api/node-api/solana/getbalance.md): Returns the lamport balance for a specific account address on the Solana blockchain.
+- [`getBlock`](https://developer.nodit.io/api/node-api/solana/getblock.md): Retrieve a confirmed or finalized block by its slot number on the Solana blockchain.
+- [`getBlockCommitment`](https://developer.nodit.io/api/node-api/solana/getblockcommitment.md): Returns the commitment level and total cluster stake for a specific Solana block.
+- [`getBlockHeight`](https://developer.nodit.io/api/node-api/solana/getblockheight.md): Returns the current block height of the most recently confirmed block on the Solana network.
+- [`getBlockProduction`](https://developer.nodit.io/api/node-api/solana/getblockproduction.md): Retrieve block production information including leader schedules and slot distributions for Solana.
+- [`getBlockTime`](https://developer.nodit.io/api/node-api/solana/getblocktime.md): Returns the estimated Unix timestamp for a specific block slot on the Solana blockchain.
+- [`getBlocks`](https://developer.nodit.io/api/node-api/solana/getblocks.md): Retrieve a list of confirmed block slot numbers within a specified slot range on Solana.
+- [`getBlocksWithLimit`](https://developer.nodit.io/api/node-api/solana/getblockswithlimit.md): Retrieve a limited number of confirmed blocks starting from a specific slot on the Solana network.
+- [`getClusterNodes`](https://developer.nodit.io/api/node-api/solana/getclusternodes.md): Returns information about all nodes currently participating in the Solana cluster.
+- [`getEpochInfo`](https://developer.nodit.io/api/node-api/solana/getepochinfo.md): Retrieve current epoch information including slot index, epoch number, and slot count for Solana.
+- [`getEpochSchedule`](https://developer.nodit.io/api/node-api/solana/getepochschedule.md): Returns the epoch schedule configuration including slots per epoch for the Solana network.
+- [`getFeeForMessage`](https://developer.nodit.io/api/node-api/solana/getfeeformessage.md): Calculate the transaction fee for a serialized message before submitting it to Solana.
+- [`getFirstAvailableBlock`](https://developer.nodit.io/api/node-api/solana/getfirstavailableblock.md): Returns the slot of the lowest confirmed block not yet purged from the Solana ledger.
+- [`getGenesisHash`](https://developer.nodit.io/api/node-api/solana/getgenesishash.md): Returns the genesis hash of the Solana blockchain, uniquely identifying the network.
+- [`getHealth`](https://developer.nodit.io/api/node-api/solana/gethealth.md): Check the health status of the Solana RPC node and verify it is operational.
+- [`getHighestSnapshotSlot`](https://developer.nodit.io/api/node-api/solana/gethighestsnapshotslot.md): Returns the highest slot for which the Solana node has a full or incremental snapshot.
+- [`getIdentity`](https://developer.nodit.io/api/node-api/solana/getidentity.md): Returns the identity public key of the current Solana RPC node.
+- [`getInflationGovernor`](https://developer.nodit.io/api/node-api/solana/getinflationgovernor.md): Retrieve the current inflation governor parameters for the Solana network.
+- [`getInflationRate`](https://developer.nodit.io/api/node-api/solana/getinflationrate.md): Returns the current inflation rate values including total, validator, and foundation rates for Solana.
+- [`getInflationReward`](https://developer.nodit.io/api/node-api/solana/getinflationreward.md): Retrieve inflation and staking rewards for a list of addresses for a specific Solana epoch.
+- [`getLatestBlockhash`](https://developer.nodit.io/api/node-api/solana/getlatestblockhash.md): 가장 최근 블록 해시를 반환합니다. and its validity context for constructing Solana transactions.
+- [`getLeaderSchedule`](https://developer.nodit.io/api/node-api/solana/getleaderschedule.md): Retrieve the leader schedule (validator slot assignments) for a given epoch on Solana.
+- [`getMaxRetransmitSlot`](https://developer.nodit.io/api/node-api/solana/getmaxretransmitslot.md): Returns the maximum slot seen from the retransmit stage of the Solana pipeline.
+- [`getMaxShredInsertSlot`](https://developer.nodit.io/api/node-api/solana/getmaxshredinsertslot.md): Returns the maximum slot seen from the shred insert stage of the Solana node.
+- [`getMinimumBalanceForRentExemption`](https://developer.nodit.io/api/node-api/solana/getminimumbalanceforrentexemption.md): Returns the minimum lamport balance required for an account to be rent-exempt on Solana.
+- [`getMultipleAccounts`](https://developer.nodit.io/api/node-api/solana/getmultipleaccounts.md): Retrieve account information for multiple Solana addresses in a single RPC request.
+- [`getProgramAccounts`](https://developer.nodit.io/api/node-api/solana/getprogramaccounts.md): Retrieve all accounts owned by a specific program on the Solana blockchain.
+- [`getRecentPerformanceSamples`](https://developer.nodit.io/api/node-api/solana/getrecentperformancesamples.md): Returns recent performance samples including transaction throughput for the Solana network.
+- [`getRecentPrioritizationFees`](https://developer.nodit.io/api/node-api/solana/getrecentprioritizationfees.md): Retrieve recent prioritization fees paid for Solana transactions to estimate compute unit prices.
+- [`getSignatureStatuses`](https://developer.nodit.io/api/node-api/solana/getsignaturestatuses.md): Returns the processing status for one or more transaction signatures on Solana.
+- [`getSignaturesForAddress`](https://developer.nodit.io/api/node-api/solana/getsignaturesforaddress.md): Retrieve a list of confirmed transaction signatures for a specific Solana account address.
+- [`getSlot`](https://developer.nodit.io/api/node-api/solana/getslot.md): Returns the slot number of the current block being processed by the Solana node.
+- [`getSlotLeader`](https://developer.nodit.io/api/node-api/solana/getslotleader.md): Returns the identity of the current slot leader (validator) on the Solana network.
+- [`getSlotLeaders`](https://developer.nodit.io/api/node-api/solana/getslotleaders.md): Returns a list of slot leaders for a specified slot range on the Solana blockchain.
+- [`getStakeMinimumDelegation`](https://developer.nodit.io/api/node-api/solana/getstakeminimumdelegation.md): Returns the minimum SOL amount required for a stake delegation on the Solana network.
+- [`getSupply`](https://developer.nodit.io/api/node-api/solana/getsupply.md): Returns the current SOL token supply including circulating and non-circulating amounts.
+- [`getTokenAccountBalance`](https://developer.nodit.io/api/node-api/solana/gettokenaccountbalance.md): Returns the token balance for a specific SPL token account on the Solana blockchain.
+- [`getTokenAccountsByOwner`](https://developer.nodit.io/api/node-api/solana/gettokenaccountsbyowner.md): Retrieve all SPL token accounts owned by a specific wallet address on Solana.
+- [`getTokenSupply`](https://developer.nodit.io/api/node-api/solana/gettokensupply.md): Returns the total supply of an SPL token identified by its mint address on the Solana network.
+- [`getTransaction`](https://developer.nodit.io/api/node-api/solana/gettransaction.md): Retrieve detailed transaction data for a confirmed transaction by its signature on Solana.
+- [`getTransactionCount`](https://developer.nodit.io/api/node-api/solana/gettransactioncount.md): Returns the total number of transactions processed since the Solana genesis block.
+- [`getVersion`](https://developer.nodit.io/api/node-api/solana/getversion.md): Returns the current Solana node version and feature set identifier.
+- [`getVoteAccounts`](https://developer.nodit.io/api/node-api/solana/getvoteaccounts.md): Retrieve a list of current and delinquent vote accounts and their stake info on Solana.
+- [`isBlockhashValid`](https://developer.nodit.io/api/node-api/solana/isblockhashvalid.md): Check whether a specific blockhash is still valid for use in a Solana transaction.
+- [`minimumLedgerSlot`](https://developer.nodit.io/api/node-api/solana/minimumledgerslot.md): Returns the lowest slot that the Solana node has information about in its ledger.
+- [`sendTransaction`](https://developer.nodit.io/api/node-api/solana/sendtransaction.md): Submit a signed and serialized transaction to the Solana network for processing.
+- [`simulateTransaction`](https://developer.nodit.io/api/node-api/solana/simulatetransaction.md): Simulate a transaction to preview compute units and detect errors without broadcasting.
+
+### sui
+
+> Sui JSON-RPC methods.
+> Supported chains: sui
+> Note: Available methods, parameters, and response fields may vary per chain.
+
+- [`sui_devInspectTransactionBlock`](https://developer.nodit.io/api/node-api/sui/sui_devinspecttransactionblock.md): Inspect a Sui transaction block in development mode to analyze effects without submitting.
+- [`sui_dryRunTransactionBlock`](https://developer.nodit.io/api/node-api/sui/sui_dryruntransactionblock.md): Dry-run a Sui transaction block to preview effects and gas usage without executing it.
+- [`sui_executeTransactionBlock`](https://developer.nodit.io/api/node-api/sui/sui_executetransactionblock.md): Submit and execute a signed Sui transaction block on the Sui blockchain network.
+- [`sui_getChainIdentifier`](https://developer.nodit.io/api/node-api/sui/sui_getchainidentifier.md): Returns the chain identifier for the current Sui network environment.
+- [`sui_getCheckpoint`](https://developer.nodit.io/api/node-api/sui/sui_getcheckpoint.md): Retrieve a Sui checkpoint by its digest or sequence number, including transaction data.
+- [`sui_getCheckpoints`](https://developer.nodit.io/api/node-api/sui/sui_getcheckpoints.md): Retrieve a paginated list of Sui checkpoints within a specified sequence number range.
+- [`sui_getEvents`](https://developer.nodit.io/api/node-api/sui/sui_getevents.md): Retrieve events emitted by Sui Move modules filtered by transaction digest.
+- [`sui_getLatestCheckpointSequenceNumber`](https://developer.nodit.io/api/node-api/sui/sui_getlatestcheckpointsequencenumber.md): Returns the sequence number of the latest checkpoint on the Sui blockchain.
+- [`sui_getMoveFunctionArgTypes`](https://developer.nodit.io/api/node-api/sui/sui_getmovefunctionargtypes.md): Retrieve the argument types of a specific Move function in a Sui package.
+- [`sui_getNormalizedMoveFunction`](https://developer.nodit.io/api/node-api/sui/sui_getnormalizedmovefunction.md): Retrieve the normalized ABI definition of a Move function in a Sui package.
+- [`sui_getNormalizedMoveModule`](https://developer.nodit.io/api/node-api/sui/sui_getnormalizedmovemodule.md): Fetch the normalized ABI definition of a Move module deployed in a Sui package.
+- [`sui_getNormalizedMoveModulesByPackage`](https://developer.nodit.io/api/node-api/sui/sui_getnormalizedmovemodulesbypackage.md): Retrieve normalized definitions of all Move modules in a specific Sui package.
+- [`sui_getNormalizedMoveStruct`](https://developer.nodit.io/api/node-api/sui/sui_getnormalizedmovestruct.md): Fetch the normalized ABI definition of a Move struct type in a Sui package.
+- [`sui_getObject`](https://developer.nodit.io/api/node-api/sui/sui_getobject.md): Retrieve the current state and metadata of a specific object on the Sui blockchain.
+- [`sui_getProtocolConfig`](https://developer.nodit.io/api/node-api/sui/sui_getprotocolconfig.md): Returns the current protocol configuration and feature flags for the Sui network.
+- [`sui_getTotalTransactionBlocks`](https://developer.nodit.io/api/node-api/sui/sui_gettotaltransactionblocks.md): Returns the total number of transaction blocks committed on the Sui blockchain.
+- [`sui_getTransactionBlock`](https://developer.nodit.io/api/node-api/sui/sui_gettransactionblock.md): Retrieve a Sui transaction block by its digest, including effects and events.
+- [`sui_multiGetObjects`](https://developer.nodit.io/api/node-api/sui/sui_multigetobjects.md): Retrieve the current state of multiple Sui objects in a single request.
+- [`sui_multiGetTransactionBlocks`](https://developer.nodit.io/api/node-api/sui/sui_multigettransactionblocks.md): Fetch multiple Sui transaction blocks by their digests in a single request.
+- [`sui_tryGetPastObject`](https://developer.nodit.io/api/node-api/sui/sui_trygetpastobject.md): Attempt to retrieve a past version of a Sui object at a specific version number.
+- [`sui_tryMultiGetPastObjects`](https://developer.nodit.io/api/node-api/sui/sui_trymultigetpastobjects.md): Retrieve past versions of multiple Sui objects at specified version numbers in one request.
+- [`sui_verifyZkLoginSignature`](https://developer.nodit.io/api/node-api/sui/sui_verifyzkloginsignature.md): Verify a zkLogin signature for a Sui transaction to authenticate zero-knowledge proof logins.
+- [`suix_getAllBalances`](https://developer.nodit.io/api/node-api/sui/suix_getallbalances.md): Retrieve all coin balances across all coin types for a specific Sui address.
+- [`suix_getAllCoins`](https://developer.nodit.io/api/node-api/sui/suix_getallcoins.md): Fetch all coin objects owned by a specific address on the Sui blockchain.
+- [`suix_getBalance`](https://developer.nodit.io/api/node-api/sui/suix_getbalance.md): Returns the total balance for a specific coin type owned by a Sui address.
+- [`suix_getCoinMetadata`](https://developer.nodit.io/api/node-api/sui/suix_getcoinmetadata.md): Retrieve metadata for a specific coin type on the Sui blockchain, including name and decimals.
+- [`suix_getCoins`](https://developer.nodit.io/api/node-api/sui/suix_getcoins.md): Retrieve a paginated list of coin objects of a specific type owned by a Sui address.
+- [`suix_getCommitteeInfo`](https://developer.nodit.io/api/node-api/sui/suix_getcommitteeinfo.md): Returns the current committee information including validators for a Sui epoch.
+- [`suix_getDynamicFieldObject`](https://developer.nodit.io/api/node-api/sui/suix_getdynamicfieldobject.md): Retrieve a dynamic field object from a Sui parent object by its field name.
+- [`suix_getDynamicFields`](https://developer.nodit.io/api/node-api/sui/suix_getdynamicfields.md): List all dynamic fields attached to a specific Sui object.
+- [`suix_getLatestSuiSystemState`](https://developer.nodit.io/api/node-api/sui/suix_getlatestsuisystemstate.md): Returns the latest Sui system state including epoch, validators, and protocol version.
+- [`suix_getOwnedObjects`](https://developer.nodit.io/api/node-api/sui/suix_getownedobjects.md): Retrieve all objects currently owned by a specific address on the Sui blockchain.
+- [`suix_getReferenceGasPrice`](https://developer.nodit.io/api/node-api/sui/suix_getreferencegasprice.md): Returns the current reference gas price for the upcoming Sui epoch.
+- [`suix_getStakes`](https://developer.nodit.io/api/node-api/sui/suix_getstakes.md): Retrieve staking information for all delegations associated with a specific Sui address.
+- [`suix_getStakesByIds`](https://developer.nodit.io/api/node-api/sui/suix_getstakesbyids.md): Retrieve staking details for specific stake object IDs on the Sui blockchain.
+- [`suix_getTotalSupply`](https://developer.nodit.io/api/node-api/sui/suix_gettotalsupply.md): Returns the total supply of a specific coin type on the Sui blockchain network.
+- [`suix_getValidatorsApy`](https://developer.nodit.io/api/node-api/sui/suix_getvalidatorsapy.md): Returns the APY (annual percentage yield) for all active validators on the Sui network.
+- [`suix_queryEvents`](https://developer.nodit.io/api/node-api/sui/suix_queryevents.md): Query Sui events using filters such as module, sender, or event type with pagination.
+- [`suix_queryTransactionBlocks`](https://developer.nodit.io/api/node-api/sui/suix_querytransactionblocks.md): Query Sui transaction blocks using filters like sender, package, or checkpoint with pagination.
+- [`suix_resolveNameServiceAddress`](https://developer.nodit.io/api/node-api/sui/suix_resolvenameserviceaddress.md): Resolve a Sui Name Service (SuiNS) domain name to its corresponding wallet address.
+- [`suix_resolveNameServiceNames`](https://developer.nodit.io/api/node-api/sui/suix_resolvenameservicenames.md): Resolve a Sui address to its associated Sui Name Service (SuiNS) domain names.
+- [`suix_subscribeEvent`](https://developer.nodit.io/api/node-api/sui/suix_subscribeevent.md): Subscribe to real-time Sui event notifications matching specified filter criteria via WebSocket.
+- [`suix_subscribeTransaction`](https://developer.nodit.io/api/node-api/sui/suix_subscribetransaction.md): Subscribe to real-time Sui transaction notifications matching specified filters via WebSocket.
+- [`unsafe_batchTransaction`](https://developer.nodit.io/api/node-api/sui/unsafe_batchtransaction.md): Build a Sui batch transaction combining multiple operations in a single transaction block.
+- [`unsafe_mergeCoins`](https://developer.nodit.io/api/node-api/sui/unsafe_mergecoins.md): Build a Sui transaction to merge multiple coin objects of the same type into one.
+- [`unsafe_moveCall`](https://developer.nodit.io/api/node-api/sui/unsafe_movecall.md): Build a Sui transaction to call a specific Move function in a published package.
+- [`unsafe_pay`](https://developer.nodit.io/api/node-api/sui/unsafe_pay.md): Build a Sui transaction to transfer coins to multiple recipients in specified amounts.
+- [`unsafe_payAllSui`](https://developer.nodit.io/api/node-api/sui/unsafe_payallsui.md): Build a Sui transaction to transfer all SUI coins owned by the sender to a recipient.
+- [`unsafe_paySui`](https://developer.nodit.io/api/node-api/sui/unsafe_paysui.md): Build a Sui transaction to transfer a specified amount of SUI to multiple recipients.
+- [`unsafe_publish`](https://developer.nodit.io/api/node-api/sui/unsafe_publish.md): Build a Sui transaction to publish a new Move package on the Sui blockchain.
+- [`unsafe_requestAddStake`](https://developer.nodit.io/api/node-api/sui/unsafe_requestaddstake.md): Build a Sui transaction to delegate SUI tokens to a specific validator for staking.
+- [`unsafe_requestWithdrawStake`](https://developer.nodit.io/api/node-api/sui/unsafe_requestwithdrawstake.md): Build a Sui transaction to withdraw a staking delegation from a validator on Sui.
+- [`unsafe_splitCoin`](https://developer.nodit.io/api/node-api/sui/unsafe_splitcoin.md): Build a Sui transaction to split a coin into multiple coins with specified amounts.
+- [`unsafe_splitCoinEqual`](https://developer.nodit.io/api/node-api/sui/unsafe_splitcoinequal.md): Build a Sui transaction to split a coin into a specified number of equal-valued coins.
+- [`unsafe_transferObject`](https://developer.nodit.io/api/node-api/sui/unsafe_transferobject.md): Build a Sui transaction to transfer ownership of a Sui object to a new address.
+- [`unsafe_transferSui`](https://developer.nodit.io/api/node-api/sui/unsafe_transfersui.md): Build a Sui transaction to transfer SUI coins from the sender to a recipient address.
