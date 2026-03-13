@@ -105,15 +105,14 @@ curl -fsSL https://raw.githubusercontent.com/s1ddh1k/nodit-cli/main/install.sh |
 
 이 스크립트는 다음을 수행합니다.
 
-- `rustup`이 없으면 자동 설치
-- 저장소를 클론한 뒤 `cargo build --release` 실행
+- 최신 GitHub Release에서 현재 플랫폼용 아티팩트 다운로드
 - `~/.local/bin/nodit-cli`에 바이너리 설치
 - macOS에서는 quarantine attribute 제거
 
-원하는 브랜치나 태그로 설치:
+원하는 릴리즈 태그로 설치:
 
 ```bash
-NODIT_CLI_REF=v0.1.0 curl -fsSL https://raw.githubusercontent.com/s1ddh1k/nodit-cli/main/install.sh | bash
+NODIT_CLI_VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/s1ddh1k/nodit-cli/main/install.sh | bash
 ```
 
 설치 경로 변경:
