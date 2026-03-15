@@ -1,12 +1,43 @@
 use clap::{Args as ClapArgs, Parser, Subcommand, ValueEnum};
 
+const AUTHENTICATION_AFTER_HELP: &str = concat!(
+    "Authentication:\n",
+    "  All commands except `webhook serve` require a Nodit API key.\n",
+    "  1. Pass `--api-key <KEY>`\n",
+    "  2. Set `NODIT_API_KEY=<KEY>`\n",
+    "  3. Add `NODIT_API_KEY=<KEY>` to `.env`\n",
+    "  4. Set `api_key = \"<KEY>\"` in the config file\n",
+    "     Linux/macOS/WSL: ~/.config/nodit-cli/config.toml\n",
+    "     Windows PowerShell: %AppData%\\\\nodit-cli\\\\config.toml\n",
+    "\n",
+    "Machine-friendly usage:\n",
+    "  nodit-cli --json ...\n",
+    "  nodit-cli --field result ...\n",
+    "  nodit-cli --field body ...\n",
+    "\n",
+    "When --output is omitted, the CLI defaults to pretty on a TTY and json when stdout is piped.\n",
+    "All responses use {\"ok\":...,\"data\"|\"error\":...} envelopes."
+);
+
+const API_KEY_LONG_HELP: &str = concat!(
+    "Nodit API key. Required for all commands except `webhook serve`.\n",
+    "\n",
+    "Authentication methods:\n",
+    "  1. Pass `--api-key <KEY>`\n",
+    "  2. Set `NODIT_API_KEY=<KEY>`\n",
+    "  3. Add `NODIT_API_KEY=<KEY>` to `.env`\n",
+    "  4. Set `api_key = \"<KEY>\"` in the config file\n",
+    "     Linux/macOS/WSL: ~/.config/nodit-cli/config.toml\n",
+    "     Windows PowerShell: %AppData%\\\\nodit-cli\\\\config.toml"
+);
+
 #[derive(Parser, Debug)]
 #[command(
     name = "nodit-cli",
     version,
     about = "CLI for Nodit APIs and streams",
     next_line_help = true,
-    after_help = "Machine-friendly usage:\n  nodit-cli --json ...\n  nodit-cli --field result ...\n  nodit-cli --field body ...\n\nWhen --output is omitted, the CLI defaults to pretty on a TTY and json when stdout is piped.\nAll responses use {\"ok\":...,\"data\"|\"error\":...} envelopes."
+    after_help = AUTHENTICATION_AFTER_HELP
 )]
 pub struct Args {
     #[command(subcommand)]
@@ -21,7 +52,7 @@ pub struct Args {
     #[arg(long, global = true)]
     pub field: Option<String>,
 
-    #[arg(long, global = true)]
+    #[arg(long, global = true, long_help = API_KEY_LONG_HELP)]
     pub api_key: Option<String>,
 
     #[arg(long, global = true)]
@@ -79,6 +110,9 @@ pub enum EvmNodeCommand {
     Transaction(NodeHashArgs),
     TransactionReceipt(NodeHashArgs),
     GasPrice(NodeTargetArgs),
+    EstimateGas(EvmEstimateGasArgs),
+    FeeHistory(EvmFeeHistoryArgs),
+    SendRawTransaction(EvmSendRawTransactionArgs),
     Call(NodeCallArgs),
 }
 
@@ -169,10 +203,73 @@ pub struct NodeCallArgs {
     pub from: Option<String>,
 
     #[arg(long)]
+    pub gas: Option<String>,
+
+    #[arg(long)]
+    pub gas_price: Option<String>,
+
+    #[arg(long)]
     pub value: Option<String>,
 
     #[arg(long)]
     pub block_tag: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct EvmEstimateGasArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub to: Option<String>,
+
+    #[arg(long)]
+    pub data: Option<String>,
+
+    #[arg(long)]
+    pub from: Option<String>,
+
+    #[arg(long)]
+    pub gas: Option<String>,
+
+    #[arg(long)]
+    pub gas_price: Option<String>,
+
+    #[arg(long)]
+    pub value: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct EvmFeeHistoryArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub block_count: u16,
+
+    #[arg(long, default_value = "latest")]
+    pub newest_block: String,
+
+    #[arg(long = "reward-percentile", num_args = 0.., value_delimiter = ',')]
+    pub reward_percentile: Vec<f64>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct EvmSendRawTransactionArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub signed_transaction: String,
 
     #[arg(long = "header", value_parser = parse_header)]
     pub headers: Vec<HeaderArg>,
@@ -222,6 +319,7 @@ pub enum SolanaNodeCommand {
     Block(SolanaBlockArgs),
     Blocks(SolanaBlocksArgs),
     Transaction(SolanaTransactionArgs),
+    SimulateTransaction(SolanaSimulateTransactionArgs),
     SignaturesForAddress(SolanaAddressArgs),
     SignatureStatuses(SolanaSignaturesArgs),
 }
@@ -242,6 +340,9 @@ pub enum SuiNodeCommand {
     ReferenceGasPrice(NodeTargetArgs),
     Object(SuiObjectArgs),
     Transaction(SuiTransactionArgs),
+    DryRunTransactionBlock(SuiDryRunTransactionBlockArgs),
+    DevInspectTransactionBlock(SuiDevInspectTransactionBlockArgs),
+    ExecuteTransactionBlock(SuiExecuteTransactionBlockArgs),
 }
 
 #[derive(ClapArgs, Debug)]
@@ -296,6 +397,21 @@ pub struct SolanaTransactionArgs {
 
     #[arg(long)]
     pub signature: String,
+
+    #[arg(long)]
+    pub config_json: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct SolanaSimulateTransactionArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub transaction: String,
 
     #[arg(long)]
     pub config_json: Option<String>,
@@ -449,6 +565,63 @@ pub struct SuiTransactionArgs {
 
     #[arg(long)]
     pub options_json: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct SuiDryRunTransactionBlockArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long = "tx-bytes")]
+    pub tx_bytes: String,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct SuiDevInspectTransactionBlockArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long)]
+    pub sender: String,
+
+    #[arg(long = "tx-bytes")]
+    pub tx_bytes: String,
+
+    #[arg(long = "gas-price")]
+    pub gas_price: u64,
+
+    #[arg(long)]
+    pub epoch: u64,
+
+    #[arg(long)]
+    pub additional_args_json: Option<String>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct SuiExecuteTransactionBlockArgs {
+    #[command(flatten)]
+    pub target: NetworkArgs,
+
+    #[arg(long = "tx-bytes")]
+    pub tx_bytes: String,
+
+    #[arg(long = "signature", num_args = 1.., value_delimiter = ',')]
+    pub signature: Vec<String>,
+
+    #[arg(long)]
+    pub options_json: Option<String>,
+
+    #[arg(long, value_enum)]
+    pub request_type: Option<SuiExecutionRequestType>,
 
     #[arg(long = "header", value_parser = parse_header)]
     pub headers: Vec<HeaderArg>,
@@ -622,6 +795,7 @@ pub enum AptosNodeCommand {
     Account(AptosAccountArgs),
     AccountBalance(AptosAccountBalanceArgs),
     Resources(AptosAccountArgs),
+    AccountResource(AptosAccountResourceArgs),
     Module(AptosModuleArgs),
     Modules(AptosAccountModulesArgs),
     AccountTransactions(AptosAccountTransactionsArgs),
@@ -633,6 +807,11 @@ pub enum AptosNodeCommand {
     Transactions(AptosTransactionsArgs),
     BlockByHeight(AptosBlockHeightArgs),
     BlockByVersion(AptosBlockVersionArgs),
+    EncodeSubmission(AptosBodyArgs),
+    SubmitTransaction(AptosBodyArgs),
+    SimulateTransaction(AptosSimulateTransactionArgs),
+    SubmitBatchTransactions(AptosBodyArgs),
+    WaitForTransactionByHash(AptosTransactionArgs),
     View(AptosViewArgs),
     TableItem(AptosTableItemArgs),
 }
@@ -1287,8 +1466,26 @@ pub struct WebhookHistoryArgs {
     #[arg(long)]
     pub subscription_id: Option<String>,
 
+    #[arg(long, value_parser = clap::value_parser!(u32).range(1..))]
+    pub page: Option<u32>,
+
+    #[arg(long, value_parser = clap::value_parser!(u16).range(1..=100))]
+    pub rpp: Option<u16>,
+
     #[arg(long)]
-    pub body: Option<String>,
+    pub with_event_message: Option<bool>,
+
+    #[arg(long, value_enum)]
+    pub status: Option<WebhookHistoryStatus>,
+
+    #[arg(long)]
+    pub start_at: Option<String>,
+
+    #[arg(long)]
+    pub end_at: Option<String>,
+
+    #[arg(long)]
+    pub start_sequence_number: Option<String>,
 
     #[arg(long = "header", value_parser = parse_header)]
     pub headers: Vec<HeaderArg>,
@@ -1391,6 +1588,21 @@ pub struct AptosModuleArgs {
 }
 
 #[derive(ClapArgs, Debug)]
+pub struct AptosAccountResourceArgs {
+    #[arg(long)]
+    pub address: String,
+
+    #[arg(long)]
+    pub resource_type: String,
+
+    #[arg(long)]
+    pub ledger_version: Option<u64>,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
 pub struct AptosAccountModulesArgs {
     #[arg(long)]
     pub address: String,
@@ -1475,6 +1687,33 @@ pub struct AptosTransactionArgs {
 pub struct AptosTransactionVersionArgs {
     #[arg(long)]
     pub version: u64,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct AptosBodyArgs {
+    #[arg(long)]
+    pub body: String,
+
+    #[arg(long = "header", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
+}
+
+#[derive(ClapArgs, Debug)]
+pub struct AptosSimulateTransactionArgs {
+    #[arg(long)]
+    pub body: String,
+
+    #[arg(long)]
+    pub estimate_gas_price: Option<bool>,
+
+    #[arg(long)]
+    pub estimate_max_gas: Option<bool>,
+
+    #[arg(long, alias = "estimate-prioritized-gas-uint-price")]
+    pub estimate_prioritized_gas_unit_price: Option<bool>,
 
     #[arg(long = "header", value_parser = parse_header)]
     pub headers: Vec<HeaderArg>,
@@ -1586,6 +1825,36 @@ pub struct StreamCommand {
 pub struct HeaderArg {
     pub name: String,
     pub value: String,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, ValueEnum)]
+pub enum WebhookHistoryStatus {
+    Success,
+    Fail,
+}
+
+impl WebhookHistoryStatus {
+    pub fn as_api_value(self) -> &'static str {
+        match self {
+            Self::Success => "SUCCESS",
+            Self::Fail => "FAIL",
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, ValueEnum)]
+pub enum SuiExecutionRequestType {
+    WaitForEffectsCert,
+    WaitForLocalExecution,
+}
+
+impl SuiExecutionRequestType {
+    pub fn as_api_value(self) -> &'static str {
+        match self {
+            Self::WaitForEffectsCert => "WaitForEffectsCert",
+            Self::WaitForLocalExecution => "WaitForLocalExecution",
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, ValueEnum)]

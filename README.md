@@ -15,22 +15,29 @@ Nodit 서비스를 위한 Rust CLI입니다. Linux, macOS, Windows 네이티브 
 
 `Datasquare`, `Dedicated Node`, 콘솔 전용 워크플로는 아직 first-class 명령으로 노출하지 않습니다. 공개 자동화 표면이 제한적이거나 제품별 성격이 강하기 때문입니다. 다만 전송 계층은 충분히 범용적으로 만들어져 있어 API 표면이 명확해지면 나중에 추가할 수 있습니다.
 
-## 현재 지원 모델
+## 지원 모델
 
-현재 CLI는 조회(Read) 중심으로 설계되어 있습니다.
+이 CLI는 `raw-first`를 기본 철학으로 둡니다.
 
-- EVM: 조회 기능이 넓게 갖춰져 있고 `raw`, `batch` escape hatch가 있음
-- Aptos: 조회 기능이 넓게 지원되고 `raw` fallback도 있음
-- Sui: 일부 조회 기능과 `raw` fallback이 있음
-- Web3 Data API: 조회/검색 커버리지가 우선 대상임
+- 공식 지원의 중심은 안정적인 전송 계층과 raw contract입니다.
+- `typed` 명령은 자주 쓰는 흐름만 감싼 curated helper입니다.
+- helper가 없더라도 stable `raw` 경로가 있으면 그건 지원 범위로 봅니다.
 
-프로젝트 전반에서 typed write flow는 아직 제한적입니다.
+현재 helper는 아래처럼 제한적으로 올려 둔 상태입니다.
 
-- EVM의 `eth_sendRawTransaction` 같은 write 메서드는 현재 `node evm raw`로만 호출할 수 있음
-- Aptos의 제출/시뮬레이션 계열은 아직 대부분 first-class typed command로 노출되지 않음
-- Sui의 트랜잭션 제출 계열도 아직 first-class typed command로 노출되지 않음
+- EVM: 조회 helper, `send-raw-transaction`, `estimate-gas`, `fee-history`, `raw`, `batch`
+- Aptos: 조회 helper, `encode/submit/simulate/batch submit`, `raw`
+- Sui: 기본 조회 helper, `dry-run/dev-inspect/execute transaction block`, `raw`
+- Solana: 주요 조회 helper, `simulate-transaction`, `raw`
+- Web3 Data API: 조회/검색 helper 중심
 
-체인 상태를 바꾸는 워크플로라면, README나 `--help`에 전용 typed command가 명시돼 있지 않은 이상 `raw-only`이거나 아직 전용 명령으로 모델링되지 않은 상태라고 보면 됩니다.
+반대로 아래는 현재 명시적으로 지원하지 않습니다.
+
+- 노드 보관 키 기반 서명
+- 개인키, mnemonic, keystore, wallet unlock 같은 지갑 기능
+- 끊긴 Stream 세션의 resume/replay
+
+체인 상태를 바꾸는 워크플로에서 helper가 없더라도 raw submit이 가능할 수 있습니다. 따라서 `typed`가 없다는 사실과 `지원하지 않는다`는 판단을 같은 의미로 보면 안 됩니다.
 
 ## 환경 변수
 
@@ -49,13 +56,14 @@ export NODIT_APTOS_API_BASE_URL=https://aptos-mainnet.nodit.io/v1
 1. CLI 플래그
 2. 프로세스 환경 변수
 3. 로컬 `.env`
-4. `~/.config/nodit-cli/config.toml`
-5. 기본값
+4. `~/.config/nodit-cli/config.toml` (WSL/Linux/macOS)
+5. `%AppData%\\nodit-cli\\config.toml` (Windows PowerShell)
+6. 기본값
 
 예시 설정 파일:
 
-- [config.example.toml](/home/eugene/git/nodit-cli/config.example.toml)
-- [.env.example](/home/eugene/git/nodit-cli/.env.example)
+- [config.example.toml](config.example.toml)
+- [.env.example](.env.example)
 
 ## 자동화 친화 사용법
 
@@ -97,28 +105,43 @@ nodit-cli --json --field result data native balance \
 
 ## 설치
 
-macOS를 포함해 한 줄로 설치하려면:
+Linux/macOS에서 한 줄로 설치하려면:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/s1ddh1k/nodit-cli/main/install.sh | bash
 ```
 
-이 스크립트는 다음을 수행합니다.
+Windows PowerShell에서 설치하려면:
+
+```powershell
+irm https://raw.githubusercontent.com/s1ddh1k/nodit-cli/main/install.ps1 | iex
+```
+
+설치 스크립트는 다음을 수행합니다.
 
 - 최신 GitHub Release에서 현재 플랫폼용 아티팩트 다운로드
-- `~/.local/bin/nodit-cli`에 바이너리 설치
+- 기본 설치 경로에 바이너리 설치
 - macOS에서는 quarantine attribute 제거
+- Windows에서는 zip 아티팩트를 풀고 `nodit-cli.exe` 설치
 
 원하는 릴리즈 태그로 설치:
 
 ```bash
-NODIT_CLI_VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/s1ddh1k/nodit-cli/main/install.sh | bash
+NODIT_CLI_VERSION=v0.2.0 curl -fsSL https://raw.githubusercontent.com/s1ddh1k/nodit-cli/main/install.sh | bash
+```
+
+```powershell
+$env:NODIT_CLI_VERSION="v0.2.0"; irm https://raw.githubusercontent.com/s1ddh1k/nodit-cli/main/install.ps1 | iex
 ```
 
 설치 경로 변경:
 
 ```bash
 NODIT_CLI_BIN_DIR="$HOME/bin" curl -fsSL https://raw.githubusercontent.com/s1ddh1k/nodit-cli/main/install.sh | bash
+```
+
+```powershell
+$env:NODIT_CLI_BIN_DIR="$HOME\\bin"; irm https://raw.githubusercontent.com/s1ddh1k/nodit-cli/main/install.ps1 | iex
 ```
 
 ## 빌드
@@ -156,15 +179,15 @@ cargo build --release
 
 ```bash
 git add .
-git commit -m "release: v0.1.1"
+git commit -m "release: v0.2.0"
 ```
 
 4. 태그를 만들고 원격에 푸시합니다.
 
 ```bash
-git tag v0.1.1
+git tag v0.2.0
 git push origin main
-git push origin v0.1.1
+git push origin v0.2.0
 ```
 
 `v*` 태그가 푸시되면 GitHub Actions가 자동으로 릴리즈를 만들고 다음 아티팩트를 업로드합니다.
@@ -175,9 +198,11 @@ git push origin v0.1.1
 
 ## 문서
 
-- [docs/cli-guide.md](/home/eugene/git/nodit-cli/docs/cli-guide.md): 실제 사용 기준의 CLI 안내
-- [docs/roadmap.md](/home/eugene/git/nodit-cli/docs/roadmap.md): 남은 작업과 우선순위
-- [docs/nodit-official/README.md](/home/eugene/git/nodit-cli/docs/nodit-official/README.md): 로컬에 저장한 공식 문서 스냅샷 안내
+- [docs/cli-guide.md](docs/cli-guide.md): 실제 사용 기준의 CLI 안내
+- [docs/roadmap.md](docs/roadmap.md): 남은 작업과 우선순위
+- [docs/release-checklist.md](docs/release-checklist.md): 회사 공식 CLI 출시 기준 체크리스트
+- [docs/support-matrix.md](docs/support-matrix.md): 현재 지원 범위와 `raw-only` 경계
+- [docs/nodit-official/README.md](docs/nodit-official/README.md): 로컬에 저장한 공식 문서 스냅샷 안내
 
 ## 명령 예시
 
@@ -224,6 +249,35 @@ nodit-cli node evm code \
   --account 0x0000000000000000000000000000000000000000
 ```
 
+가스 추정:
+
+```bash
+nodit-cli node evm estimate-gas \
+  --protocol ethereum \
+  --network mainnet \
+  --to 0x0000000000000000000000000000000000000000 \
+  --data 0x70a082310000000000000000000000000000000000000000000000000000000000000001
+```
+
+수수료 히스토리 조회:
+
+```bash
+nodit-cli node evm fee-history \
+  --protocol ethereum \
+  --network mainnet \
+  --block-count 20 \
+  --reward-percentile 10,50,90
+```
+
+서명된 트랜잭션 전송:
+
+```bash
+nodit-cli node evm send-raw-transaction \
+  --protocol ethereum \
+  --network mainnet \
+  --signed-transaction 0x02f8...
+```
+
 Raw JSON-RPC 호출:
 
 ```bash
@@ -254,6 +308,12 @@ nodit-cli node aptos estimate-gas-price
 ```
 
 ```bash
+nodit-cli node aptos account-resource \
+  --address 0x1 \
+  --resource-type 0x1::account::Account
+```
+
+```bash
 nodit-cli node aptos transaction-by-version \
   --version 1
 ```
@@ -276,6 +336,23 @@ nodit-cli node aptos events-by-creation-number \
   --address 0x1 \
   --creation-number 0 \
   --limit 10
+```
+
+```bash
+nodit-cli node aptos encode-submission \
+  --body '{"sender":"0x1","sequence_number":"0","max_gas_amount":"2000","gas_unit_price":"100","expiration_timestamp_secs":"1735689600","payload":{"type":"entry_function_payload","function":"0x1::aptos_account::transfer","type_arguments":[],"arguments":["0x2","1"]},"signature":{"type":"ed25519_signature","public_key":"0x00","signature":"0x00"},"replay_protection_nonce":"0"}'
+```
+
+```bash
+nodit-cli node aptos simulate-transaction \
+  --estimate-gas-price true \
+  --estimate-max-gas true \
+  --body '{"sender":"0x1","sequence_number":"0","max_gas_amount":"2000","gas_unit_price":"100","expiration_timestamp_secs":"1735689600","payload":{"type":"entry_function_payload","function":"0x1::aptos_account::transfer","type_arguments":[],"arguments":["0x2","1"]},"signature":{"type":"ed25519_signature","public_key":"0x00","signature":"0x00"},"replay_protection_nonce":"0"}'
+```
+
+```bash
+nodit-cli node aptos wait-for-transaction-by-hash \
+  --hash 0xYOUR_TX_HASH
 ```
 
 Solana Node API:
@@ -308,6 +385,41 @@ nodit-cli node solana version \
 nodit-cli node solana epoch-info \
   --protocol solana \
   --network mainnet
+```
+
+```bash
+nodit-cli node solana simulate-transaction \
+  --protocol solana \
+  --network mainnet \
+  --transaction AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAA==
+```
+
+Sui Node API:
+
+```bash
+nodit-cli node sui dry-run-transaction-block \
+  --protocol sui \
+  --network mainnet \
+  --tx-bytes AAAC...
+```
+
+```bash
+nodit-cli node sui dev-inspect-transaction-block \
+  --protocol sui \
+  --network mainnet \
+  --sender 0xYOUR_ADDRESS \
+  --tx-bytes AAAC... \
+  --gas-price 1000 \
+  --epoch 8888
+```
+
+```bash
+nodit-cli node sui execute-transaction-block \
+  --protocol sui \
+  --network mainnet \
+  --tx-bytes AAAC... \
+  --signature AKD4... \
+  --request-type wait-for-local-execution
 ```
 
 ```bash
@@ -493,6 +605,19 @@ nodit-cli webhook create \
   --address 0xdAC17F958D2ee523a2206206994597C13D831ec7,0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
 ```
 
+Webhook 호출 이력 조회:
+
+```bash
+nodit-cli webhook history \
+  --protocol ethereum \
+  --network mainnet \
+  --subscription-id 12345 \
+  --page 1 \
+  --rpp 20 \
+  --status success \
+  --with-event-message true
+```
+
 `MINED_TRANSACTION`용 Stream:
 
 ```bash
@@ -511,7 +636,8 @@ nodit-cli stream \
 - `node`는 `evm`, `aptos` 같은 체인 패밀리 기준으로 묶습니다.
 - `data`는 `native`, `account`, `tx`, `block`, `token`, `nft`, `ens`, `stats`, `asset`, `multichain` 같은 도메인 기준으로 묶습니다.
 - 현재 `solana`는 node 표면에서, `bitcoin`은 data 표면에서 실검증이 진행된 상태입니다.
-- 안정적인 typed command가 아직 없는 곳에는 `raw` 명령을 유지합니다.
+- `raw`는 helper가 비어 있을 때의 임시 우회가 아니라 공식 지원 표면입니다.
+- `typed`는 자주 쓰는 흐름만 감싼 convenience layer로 유지합니다.
 - `webhook serve`는 Nodit 콜백을 로컬에서 받는 용도로 쓸 수 있고 `signingKey`로 Nodit `x-signature`를 검증할 수 있습니다.
 - 체인별 스키마를 너무 일찍 고정하지 않기 위해 응답은 raw JSON 중심으로 유지합니다.
 - Linux, macOS, Windows 대상 네이티브 CI와 릴리스 패키징이 설정돼 있습니다.

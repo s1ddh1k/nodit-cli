@@ -36,6 +36,13 @@ need_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "required command not found: $1"
 }
 
+is_windows() {
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*|Windows_NT) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 detect_asset_name() {
   local os arch
   os="$(uname -s)"
@@ -117,6 +124,48 @@ install_unix_archive() {
   chmod 755 "$target_bin"
 }
 
+to_windows_path() {
+  local path="$1"
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -w "$path"
+  else
+    printf '%s\n' "$path"
+  fi
+}
+
+install_windows_archive() {
+  local archive_path="$1"
+  local extract_dir="$2"
+  local target_bin="$3"
+
+  if command -v unzip >/dev/null 2>&1; then
+    unzip -q "$archive_path" -d "$extract_dir"
+  elif command -v powershell.exe >/dev/null 2>&1; then
+    local archive_win extract_win
+    archive_win="$(to_windows_path "$archive_path")"
+    extract_win="$(to_windows_path "$extract_dir")"
+    powershell.exe -NoProfile -NonInteractive -Command \
+      "Expand-Archive -Path '$archive_win' -DestinationPath '$extract_win' -Force" >/dev/null
+  else
+    fail "required command not found for Windows zip extraction: unzip or powershell.exe"
+  fi
+
+  local source_bin
+  source_bin="$(find "$extract_dir" -type f -name nodit-cli.exe | head -n1)"
+  [[ -n "$source_bin" ]] || fail "nodit-cli.exe binary not found in archive"
+
+  cp "$source_bin" "$target_bin"
+  chmod 755 "$target_bin"
+}
+
+resolve_target_bin() {
+  local target_bin="$BIN_DIR/$INSTALL_NAME"
+  if is_windows && [[ "$target_bin" != *.exe ]]; then
+    target_bin="${target_bin}.exe"
+  fi
+  printf '%s\n' "$target_bin"
+}
+
 main() {
   if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
     usage
@@ -124,12 +173,21 @@ main() {
   fi
 
   need_cmd curl
-  need_cmd tar
   need_cmd mktemp
 
   local asset_name api_url release_json tag_name asset_url archive_path extract_dir target_bin
 
   asset_name="$(detect_asset_name)"
+  case "$asset_name" in
+    *.tar.gz)
+      need_cmd tar
+      ;;
+    *.zip)
+      if ! command -v unzip >/dev/null 2>&1 && ! command -v powershell.exe >/dev/null 2>&1; then
+        fail "required command not found for Windows zip extraction: unzip or powershell.exe"
+      fi
+      ;;
+  esac
   api_url="$(release_api_url)"
 
   echo "Resolving release metadata from $api_url"
@@ -147,7 +205,7 @@ main() {
 
   archive_path="$TMP_DIR/$asset_name"
   extract_dir="$TMP_DIR/extracted"
-  target_bin="$BIN_DIR/$INSTALL_NAME"
+  target_bin="$(resolve_target_bin)"
   mkdir -p "$extract_dir"
 
   echo "Downloading $asset_name from release $tag_name"
@@ -158,7 +216,7 @@ main() {
       install_unix_archive "$archive_path" "$extract_dir" "$target_bin"
       ;;
     *.zip)
-      fail "Windows zip installation is not supported by this shell script"
+      install_windows_archive "$archive_path" "$extract_dir" "$target_bin"
       ;;
     *)
       fail "unsupported asset format: $asset_name"

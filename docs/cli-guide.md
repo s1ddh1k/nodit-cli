@@ -13,27 +13,28 @@
 
 핵심 방향은 간단합니다.
 
-- 자주 쓰는 조회 흐름은 typed command로 제공
-- 덜 자주 쓰이거나 입력 형태가 자주 바뀌는 영역은 `raw`로 호출 가능
-- 체인 상태를 바꾸는 write 흐름은 아직 제한적으로만 지원
+- 공식 지원의 중심은 stable `raw` contract
+- 자주 쓰는 흐름만 `typed helper`로 제공
+- write는 `signed payload submit`과 시뮬레이션 위주로만 helper를 둠
 
 ## 현재 지원 상태
 
-이 CLI는 현재 `조회(Read) 중심`입니다.
+이 CLI는 현재 `raw-first` + `curated helper` 모델입니다.
 
-- EVM: 조회형 JSON-RPC helper와 `raw`, `batch` 지원
-- Aptos: 조회형 REST helper를 넓게 지원하고 `raw` fallback 제공
-- Sui: 기본 조회 helper와 `raw` fallback 제공
-- Web3 Data: 공개 문서 기준 주요 조회 endpoint를 폭넓게 커버
-- Webhook / Stream: 기본 관리 및 구독 흐름 지원
+- EVM: 조회 helper와 `raw`, `batch`, 일부 submit/simulate helper 제공
+- Aptos: 조회 helper와 `raw`, 일부 submit/simulate helper 제공
+- Sui: 기본 조회 helper와 `raw`, 일부 execute/simulate helper 제공
+- Solana: 주요 조회 helper와 `raw`, 일부 simulate helper 제공
+- Web3 Data: 공개 문서 기준 주요 helper 제공
+- Webhook / Stream: 기본 관리 및 구독 흐름 제공
 
-반면 다음 영역은 아직 본격적으로 정리되지 않았습니다.
+반면 helper coverage는 의도적으로 선별적입니다.
 
-- EVM typed write helper
-- Aptos typed submission / simulation flow
-- Sui typed submission / simulation flow
+- helper가 없는 endpoint 다수
+- 노드 보관 키나 지갑 기능이 필요한 고수준 write
+- reconnect는 가능하지만 resume이 필요한 Stream 운영
 
-즉, 트랜잭션 제출이나 상태 변경이 필요한 경우에는 아직 `raw` 호출이 필요하거나, 전용 명령이 없는 상태일 수 있습니다.
+즉, helper가 없는 write/read endpoint는 `raw`로 호출하는 것이 기본 경로입니다.
 
 ## 설정
 
@@ -52,13 +53,14 @@ export NODIT_APTOS_API_BASE_URL=https://aptos-mainnet.nodit.io/v1
 1. CLI 플래그
 2. 프로세스 환경 변수
 3. 로컬 `.env`
-4. `~/.config/nodit-cli/config.toml`
-5. 기본값
+4. `~/.config/nodit-cli/config.toml` (WSL/Linux/macOS)
+5. `%AppData%\\nodit-cli\\config.toml` (Windows PowerShell)
+6. 기본값
 
 예시 파일:
 
-- [config.example.toml](/home/eugene/git/nodit-cli/config.example.toml)
-- [.env.example](/home/eugene/git/nodit-cli/.env.example)
+- [config.example.toml](../config.example.toml)
+- [.env.example](../.env.example)
 
 ## 명령 구조
 
@@ -133,22 +135,44 @@ Webhook 관리와 로컬 수신기를 제공합니다.
 - `history`
 - `serve`
 
+예를 들어 이력 조회는 query parameter 기반 필터를 그대로 노출합니다.
+
+```bash
+nodit-cli webhook history \
+  --protocol ethereum \
+  --network mainnet \
+  --subscription-id 12345 \
+  --page 1 \
+  --rpp 20 \
+  --status success \
+  --with-event-message true
+```
+
 ### `stream`
 
 Nodit 이벤트 모델 기준의 구독 흐름을 제공합니다.
 
-- WebSocket 연결
+- Socket.IO 기반 WebSocket 연결
 - typed subscribe
 - raw subscribe fallback
 
-## Typed 명령과 Raw 명령
+참고:
+
+- CLI는 `/v1/websocket` endpoint로 정규화해 연결합니다.
+- `BLOCK_PERIOD` 같은 이벤트는 첫 메시지까지 수십 초가 걸릴 수 있습니다.
+- 연결이 끊기면 기존 구독을 이어받는 것이 아니라 다시 구독합니다.
+- 이때 `subscriptionId`는 유지되지 않고 새 값이 발급됩니다.
+- 즉, 자동 reconnect는 가능해도 resume은 지원하지 않는 것으로 봐야 합니다.
+
+## Raw 우선, Typed helper
 
 원칙은 다음과 같습니다.
 
-- 먼저 typed command를 확인
-- 원하는 기능이 없으면 `raw` 사용
+- `raw`는 보조 수단이 아니라 공식 지원 중심입니다.
+- `typed`는 자주 쓰는 경로를 덜 실수하게 만드는 helper입니다.
+- 원하는 helper가 없으면 `raw`를 사용하면 됩니다.
 
-예를 들어 EVM에서 잘 알려진 조회 메서드는 typed helper로 바로 호출할 수 있습니다.
+예를 들어 자주 쓰는 조회/시뮬레이션은 helper로 바로 호출할 수 있습니다.
 
 ```bash
 nodit-cli node evm transaction-receipt \
@@ -157,7 +181,44 @@ nodit-cli node evm transaction-receipt \
   --hash 0xYOUR_TX_HASH
 ```
 
-반면 전용 명령이 없는 메서드는 `raw`로 호출합니다.
+```bash
+nodit-cli node evm estimate-gas \
+  --protocol ethereum \
+  --network mainnet \
+  --to 0x0000000000000000000000000000000000000000 \
+  --data 0x70a082310000000000000000000000000000000000000000000000000000000000000001
+```
+
+```bash
+nodit-cli node aptos simulate-transaction \
+  --estimate-gas-price true \
+  --body '{"sender":"0x1","sequence_number":"0","max_gas_amount":"2000","gas_unit_price":"100","expiration_timestamp_secs":"1735689600","payload":{"type":"entry_function_payload","function":"0x1::aptos_account::transfer","type_arguments":[],"arguments":["0x2","1"]},"signature":{"type":"ed25519_signature","public_key":"0x00","signature":"0x00"},"replay_protection_nonce":"0"}'
+```
+
+```bash
+nodit-cli node solana simulate-transaction \
+  --protocol solana \
+  --network mainnet \
+  --transaction AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAA==
+```
+
+```bash
+nodit-cli node sui dry-run-transaction-block \
+  --protocol sui \
+  --network mainnet \
+  --tx-bytes AAAC...
+```
+
+```bash
+nodit-cli node sui execute-transaction-block \
+  --protocol sui \
+  --network mainnet \
+  --tx-bytes AAAC... \
+  --signature AKD4... \
+  --request-type wait-for-local-execution
+```
+
+반면 helper가 없는 메서드는 `raw`가 기본 경로입니다.
 
 ```bash
 nodit-cli node evm raw \
@@ -259,4 +320,4 @@ nodit-cli --json --field result data native balance \
 - 체인별 지원 폭은 동일하지 않음
 - Nodit의 실제 제품 표면이 바뀌면 command 구성이 같이 바뀔 수 있음
 
-남은 작업은 [docs/roadmap.md](/home/eugene/git/nodit-cli/docs/roadmap.md)에 정리합니다.
+남은 작업은 [docs/roadmap.md](roadmap.md)에 정리합니다.

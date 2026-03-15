@@ -112,7 +112,7 @@ fn load_dotenv() -> Result<HashMap<String, String>> {
     parse_dotenv(&content)
 }
 
-fn config_file_path() -> Option<PathBuf> {
+pub fn config_file_path() -> Option<PathBuf> {
     dirs::config_dir().map(|dir| dir.join("nodit-cli").join("config.toml"))
 }
 

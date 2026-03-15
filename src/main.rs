@@ -34,8 +34,10 @@ use crate::cli::{
     NodeCommand, NodeRawArgs, OutputFormat, SolanaNodeCommand, StreamCommand, SuiNodeCommand,
     WebhookCommand, WebhookServeArgs,
 };
-use crate::config::Config;
+use crate::config::{config_file_path, Config};
 use crate::output::{render_error, render_success};
+
+const STREAM_SOCKET_NAMESPACE: &str = "/v1/websocket";
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -67,8 +69,9 @@ async fn main() -> ExitCode {
 
 async fn run(args: Args, output: OutputFormat) -> Result<Value> {
     let config = Config::from_env(&args)?;
+    ensure_authenticated(&args.command, &config)?;
     let client = Client::builder()
-        .user_agent("nodit-cli/0.1.0")
+        .user_agent(concat!("nodit-cli/", env!("CARGO_PKG_VERSION")))
         .build()
         .context("failed to build HTTP client")?;
 
@@ -78,6 +81,35 @@ async fn run(args: Args, output: OutputFormat) -> Result<Value> {
         Command::Webhook(cmd) => handle_webhook(&client, &config, &output, cmd).await,
         Command::Stream(cmd) => handle_stream(&config, cmd).await,
     }
+}
+
+fn ensure_authenticated(command: &Command, config: &Config) -> Result<()> {
+    if !command_requires_auth(command) || has_configured_api_key(&config.api_key) {
+        return Ok(());
+    }
+
+    Err(anyhow!(authentication_required_message()))
+}
+
+fn command_requires_auth(command: &Command) -> bool {
+    !matches!(command, Command::Webhook(WebhookCommand::Serve(_)))
+}
+
+fn has_configured_api_key(api_key: &Option<String>) -> bool {
+    api_key
+        .as_deref()
+        .map(str::trim)
+        .is_some_and(|value| !value.is_empty())
+}
+
+fn authentication_required_message() -> String {
+    let config_path = config_file_path()
+        .map(|path| path.display().to_string())
+        .unwrap_or_else(|| "~/.config/nodit-cli/config.toml".to_string());
+
+    format!(
+        "authentication required: pass `--api-key <KEY>`, set `NODIT_API_KEY=<KEY>`, add `NODIT_API_KEY=<KEY>` to `.env`, or set `api_key = \"<KEY>\"` in `{config_path}`; `webhook serve` is the only command that does not require authentication"
+    )
 }
 
 fn resolve_output_format(args: &Args) -> OutputFormat {
@@ -343,6 +375,22 @@ async fn handle_solana_node(
             )
             .await
         }
+        SolanaNodeCommand::SimulateTransaction(args) => {
+            let mut params = vec![Value::String(args.transaction)];
+            if let Some(config_json) = args.config_json {
+                params.push(parse_json_required(&config_json)?);
+            }
+            execute_node_method(
+                client,
+                config,
+                output,
+                &args.target,
+                &args.headers,
+                "simulateTransaction",
+                Value::Array(params),
+            )
+            .await
+        }
         SolanaNodeCommand::SignaturesForAddress(args) => {
             let mut params = vec![Value::String(args.address)];
             if let Some(config_json) = args.config_json {
@@ -510,6 +558,53 @@ async fn handle_sui_node(
             )
             .await
         }
+        SuiNodeCommand::DryRunTransactionBlock(args) => {
+            execute_node_method(
+                client,
+                config,
+                output,
+                &args.target,
+                &args.headers,
+                "sui_dryRunTransactionBlock",
+                json!([args.tx_bytes]),
+            )
+            .await
+        }
+        SuiNodeCommand::DevInspectTransactionBlock(args) => {
+            execute_node_method(
+                client,
+                config,
+                output,
+                &args.target,
+                &args.headers,
+                "sui_devInspectTransactionBlock",
+                build_sui_dev_inspect_transaction_block_params(
+                    args.sender,
+                    args.tx_bytes,
+                    args.gas_price,
+                    args.epoch,
+                    args.additional_args_json.as_deref(),
+                )?,
+            )
+            .await
+        }
+        SuiNodeCommand::ExecuteTransactionBlock(args) => {
+            execute_node_method(
+                client,
+                config,
+                output,
+                &args.target,
+                &args.headers,
+                "sui_executeTransactionBlock",
+                build_sui_execute_transaction_block_params(
+                    args.tx_bytes,
+                    args.signature,
+                    args.options_json.as_deref(),
+                    args.request_type,
+                )?,
+            )
+            .await
+        }
     }
 }
 
@@ -640,16 +735,63 @@ async fn handle_evm_node(
             )
             .await
         }
+        EvmNodeCommand::EstimateGas(args) => {
+            let call = build_evm_call_object(
+                args.to,
+                args.data,
+                args.from,
+                args.gas,
+                args.gas_price,
+                args.value,
+            );
+            execute_node_method(
+                client,
+                config,
+                output,
+                &args.target,
+                &args.headers,
+                "eth_estimateGas",
+                json!([call]),
+            )
+            .await
+        }
+        EvmNodeCommand::FeeHistory(args) => {
+            execute_node_method(
+                client,
+                config,
+                output,
+                &args.target,
+                &args.headers,
+                "eth_feeHistory",
+                build_evm_fee_history_params(
+                    args.block_count,
+                    args.newest_block,
+                    args.reward_percentile,
+                ),
+            )
+            .await
+        }
+        EvmNodeCommand::SendRawTransaction(args) => {
+            execute_node_method(
+                client,
+                config,
+                output,
+                &args.target,
+                &args.headers,
+                "eth_sendRawTransaction",
+                json!([args.signed_transaction]),
+            )
+            .await
+        }
         EvmNodeCommand::Call(args) => {
-            let mut call = Map::new();
-            call.insert("to".to_string(), Value::String(args.to));
-            call.insert("data".to_string(), Value::String(args.data));
-            if let Some(from) = args.from {
-                call.insert("from".to_string(), Value::String(from));
-            }
-            if let Some(value) = args.value {
-                call.insert("value".to_string(), Value::String(value));
-            }
+            let call = build_evm_call_object(
+                Some(args.to),
+                Some(args.data),
+                args.from,
+                args.gas,
+                args.gas_price,
+                args.value,
+            );
             execute_node_method(
                 client,
                 config,
@@ -657,10 +799,7 @@ async fn handle_evm_node(
                 &args.target,
                 &args.headers,
                 "eth_call",
-                json!([
-                    Value::Object(call),
-                    args.block_tag.unwrap_or_else(|| "latest".to_string())
-                ]),
+                json!([call, args.block_tag.unwrap_or_else(|| "latest".to_string())]),
             )
             .await
         }
@@ -685,7 +824,7 @@ async fn execute_node_rpc(
         "params": params,
     });
 
-    execute_json_request(
+    execute_rpc_request(
         client,
         Method::POST,
         &url,
@@ -706,12 +845,9 @@ async fn execute_node_batch(
         Some(url) => url,
         None => build_rpc_url(config, &cmd.target)?,
     };
-    let body = parse_json_required(&cmd.body)?;
-    if !body.is_array() {
-        return Err(anyhow!("node batch body must be a JSON array"));
-    }
+    let body = parse_json_array_required(&cmd.body, "node batch body")?;
 
-    execute_json_request(
+    execute_rpc_request(
         client,
         Method::POST,
         &url,
@@ -753,6 +889,85 @@ fn build_node_logs_filter(args: crate::cli::NodeLogsArgs) -> NodeLogsFilter {
     }
 }
 
+fn build_evm_call_object(
+    to: Option<String>,
+    data: Option<String>,
+    from: Option<String>,
+    gas: Option<String>,
+    gas_price: Option<String>,
+    value: Option<String>,
+) -> Value {
+    let mut call = Map::new();
+    if let Some(to) = to {
+        call.insert("to".to_string(), Value::String(to));
+    }
+    if let Some(data) = data {
+        call.insert("data".to_string(), Value::String(data));
+    }
+    if let Some(from) = from {
+        call.insert("from".to_string(), Value::String(from));
+    }
+    if let Some(gas) = gas {
+        call.insert("gas".to_string(), Value::String(gas));
+    }
+    if let Some(gas_price) = gas_price {
+        call.insert("gasPrice".to_string(), Value::String(gas_price));
+    }
+    if let Some(value) = value {
+        call.insert("value".to_string(), Value::String(value));
+    }
+    Value::Object(call)
+}
+
+fn build_evm_fee_history_params(
+    block_count: u16,
+    newest_block: String,
+    reward_percentiles: Vec<f64>,
+) -> Value {
+    json!([block_count, newest_block, reward_percentiles])
+}
+
+fn build_sui_dev_inspect_transaction_block_params(
+    sender: String,
+    tx_bytes: String,
+    gas_price: u64,
+    epoch: u64,
+    additional_args_json: Option<&str>,
+) -> Result<Value> {
+    let mut params = vec![
+        Value::String(sender),
+        Value::String(tx_bytes),
+        json!(gas_price),
+        json!(epoch),
+    ];
+    if let Some(additional_args_json) = additional_args_json {
+        params.push(parse_json_required(additional_args_json)?);
+    }
+    Ok(Value::Array(params))
+}
+
+fn build_sui_execute_transaction_block_params(
+    tx_bytes: String,
+    signatures: Vec<String>,
+    options_json: Option<&str>,
+    request_type: Option<crate::cli::SuiExecutionRequestType>,
+) -> Result<Value> {
+    let mut params = vec![
+        Value::String(tx_bytes),
+        Value::Array(signatures.into_iter().map(Value::String).collect()),
+    ];
+    if options_json.is_some() || request_type.is_some() {
+        params.push(match options_json {
+            Some(options_json) => parse_json_required(options_json)?,
+            None => Value::Null,
+        });
+    }
+    if let Some(request_type) = request_type {
+        params.push(Value::String(request_type.as_api_value().to_string()));
+    }
+    Ok(Value::Array(params))
+}
+
 async fn execute_node_method(
     client: &Client,
     config: &Config,
@@ -770,7 +985,7 @@ async fn execute_node_method(
         "params": params,
     });
 
-    execute_json_request(
+    execute_rpc_request(
         client,
         Method::POST,
         &url,
@@ -2476,15 +2691,16 @@ async fn handle_webhook(
                     args.target.protocol, args.target.network
                 ),
             )?;
-            if let Some(subscription_id) = args.subscription_id {
-                url = append_query(url, &[("subscriptionId", subscription_id)])?;
+            let params = build_webhook_history_query_params(&args);
+            if !params.is_empty() {
+                url = append_query(url, &params)?;
             }
             execute_json_request(
                 client,
                 Method::GET,
                 &url,
                 build_headers(&config.api_key, &args.headers)?,
-                maybe_parse_json(args.body.as_deref())?,
+                None,
                 output,
             )
             .await
@@ -2607,9 +2823,9 @@ async fn handle_aptos_node(
             .await
         }
         AptosNodeCommand::AccountBalance(args) => {
-            let mut url = join_url(
+            let mut url = join_url_segments(
                 &config.aptos_api_base_url,
-                &format!("/accounts/{}/balance/{}", args.address, args.asset_type),
+                &["accounts", &args.address, "balance", &args.asset_type],
             )?;
             if let Some(ledger_version) = args.ledger_version {
                 url = append_query(url, &[("ledger_version", ledger_version.to_string())])?;
@@ -2629,6 +2845,24 @@ async fn handle_aptos_node(
                 &config.aptos_api_base_url,
                 &format!("/accounts/{}/resources", args.address),
             )?;
+            execute_json_request(
+                client,
+                Method::GET,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                None,
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::AccountResource(args) => {
+            let mut url = join_url_segments(
+                &config.aptos_api_base_url,
+                &["accounts", &args.address, "resources", &args.resource_type],
+            )?;
+            if let Some(ledger_version) = args.ledger_version {
+                url = append_query(url, &[("ledger_version", ledger_version.to_string())])?;
+            }
             execute_json_request(
                 client,
                 Method::GET,
@@ -2740,12 +2974,15 @@ async fn handle_aptos_node(
             .await
         }
         AptosNodeCommand::EventsByEventHandle(args) => {
-            let mut url = join_url(
+            let mut url = join_url_segments(
                 &config.aptos_api_base_url,
-                &format!(
-                    "/accounts/{}/events/{}/{}",
-                    args.address, args.event_handle, args.field_name
-                ),
+                &[
+                    "accounts",
+                    &args.address,
+                    "events",
+                    &args.event_handle,
+                    &args.field_name,
+                ],
             )?;
             let params = build_aptos_pagination_params(args.limit, args.start);
             if !params.is_empty() {
@@ -2843,6 +3080,80 @@ async fn handle_aptos_node(
             )
             .await
         }
+        AptosNodeCommand::EncodeSubmission(args) => {
+            let url = join_url(
+                &config.aptos_api_base_url,
+                "/transactions/encode_submission",
+            )?;
+            execute_json_request(
+                client,
+                Method::POST,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                Some(parse_json_required(&args.body)?),
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::SubmitTransaction(args) => {
+            let url = join_url(&config.aptos_api_base_url, "/transactions")?;
+            execute_json_request(
+                client,
+                Method::POST,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                Some(parse_json_required(&args.body)?),
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::SimulateTransaction(args) => {
+            let mut url = join_url(&config.aptos_api_base_url, "/transactions/simulate")?;
+            let params = build_aptos_simulate_query_params(
+                args.estimate_gas_price,
+                args.estimate_max_gas,
+                args.estimate_prioritized_gas_unit_price,
+            );
+            if !params.is_empty() {
+                url = append_query(url, &params)?;
+            }
+            execute_json_request(
+                client,
+                Method::POST,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                Some(parse_json_required(&args.body)?),
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::SubmitBatchTransactions(args) => {
+            let url = join_url(&config.aptos_api_base_url, "/transactions/batch")?;
+            execute_json_request(
+                client,
+                Method::POST,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                Some(parse_json_array_required(&args.body, "aptos batch body")?),
+                output,
+            )
+            .await
+        }
+        AptosNodeCommand::WaitForTransactionByHash(args) => {
+            let url = join_url_segments(
+                &config.aptos_api_base_url,
+                &["transactions", "wait_by_hash", &args.hash],
+            )?;
+            execute_json_request(
+                client,
+                Method::GET,
+                &url,
+                build_headers(&config.api_key, &args.headers)?,
+                None,
+                output,
+            )
+            .await
+        }
         AptosNodeCommand::View(args) => {
             let url = join_url(&config.aptos_api_base_url, "/view")?;
             let body = json!({
@@ -2900,36 +3211,166 @@ fn build_aptos_pagination_params(
     params
 }
 
+fn build_aptos_simulate_query_params(
+    estimate_gas_price: Option<bool>,
+    estimate_max_gas: Option<bool>,
+    estimate_prioritized_gas_unit_price: Option<bool>,
+) -> Vec<(&'static str, String)> {
+    let mut params = Vec::new();
+    if let Some(estimate_gas_price) = estimate_gas_price {
+        params.push(("estimate_gas_price", estimate_gas_price.to_string()));
+    }
+    if let Some(estimate_max_gas) = estimate_max_gas {
+        params.push(("estimate_max_gas", estimate_max_gas.to_string()));
+    }
+    if let Some(estimate_prioritized_gas_unit_price) = estimate_prioritized_gas_unit_price {
+        // Nodit's published Aptos docs use `uint` here; keep the wire key aligned with the API docs.
+        params.push((
+            "estimate_prioritized_gas_uint_price",
+            estimate_prioritized_gas_unit_price.to_string(),
+        ));
+    }
+    params
+}
+
+fn build_webhook_history_query_params(
+    args: &crate::cli::WebhookHistoryArgs,
+) -> Vec<(&'static str, String)> {
+    let mut params = Vec::new();
+
+    if let Some(subscription_id) = &args.subscription_id {
+        params.push(("subscriptionId", subscription_id.clone()));
+    }
+    if let Some(page) = args.page {
+        params.push(("page", page.to_string()));
+    }
+    if let Some(rpp) = args.rpp {
+        params.push(("rpp", rpp.to_string()));
+    }
+    if let Some(with_event_message) = args.with_event_message {
+        params.push(("withEventMessage", with_event_message.to_string()));
+    }
+    if let Some(status) = args.status {
+        params.push(("status", status.as_api_value().to_string()));
+    }
+    if let Some(start_at) = &args.start_at {
+        params.push(("startAt", start_at.clone()));
+    }
+    if let Some(end_at) = &args.end_at {
+        params.push(("endAt", end_at.clone()));
+    }
+    if let Some(start_sequence_number) = &args.start_sequence_number {
+        params.push(("startSequenceNumber", start_sequence_number.clone()));
+    }
+
+    params
+}
+
 async fn handle_stream(config: &Config, cmd: StreamCommand) -> Result<Value> {
-    let subscribe_message = build_stream_subscribe_message(&cmd)?;
-    let url = cmd
-        .url
-        .clone()
-        .unwrap_or_else(|| build_stream_url(config, &cmd.target));
-    let _ = Url::parse(&url).with_context(|| format!("invalid websocket URL: {url}"))?;
+    let api_key = config
+        .api_key
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| anyhow!(authentication_required_message()))?;
+    let subscribe_packet = build_stream_subscribe_packet(&cmd)?;
+    let auth_packet = build_stream_auth_packet(api_key)?;
+    let url = build_stream_url(config, cmd.url.as_deref(), &cmd.target)?;
 
     let (mut socket, _) = connect_async(url.as_str())
         .await
         .with_context(|| format!("failed to connect to stream endpoint: {url}"))?;
 
-    if let Some(message) = subscribe_message {
-        socket
-            .send(Message::Text(message))
-            .await
-            .context("failed to send stream subscription message")?;
-    }
-
     let mut received = Vec::new();
-    for _ in 0..cmd.messages {
+    let mut sent_auth = false;
+    let mut sent_subscription = false;
+
+    while received.len() < cmd.messages {
         let Some(next) = socket.next().await else {
             break;
         };
         let message = next.context("failed to read stream message")?;
         match message {
             Message::Text(text) => {
-                let value =
-                    serde_json::from_str::<Value>(&text).unwrap_or(Value::String(text.to_string()));
-                received.push(value);
+                for packet in split_socketio_packets(&text) {
+                    match packet {
+                        "2" => {
+                            socket
+                                .send(Message::Text("3".to_string()))
+                                .await
+                                .context("failed to answer engine.io ping")?;
+                        }
+                        packet if packet.starts_with('0') => {
+                            if !sent_auth {
+                                socket
+                                    .send(Message::Text(auth_packet.clone()))
+                                    .await
+                                    .context("failed to send stream auth packet")?;
+                                sent_auth = true;
+                            }
+                        }
+                        packet if packet.starts_with("40") => {
+                            if !sent_subscription {
+                                if let Some(packet) = &subscribe_packet {
+                                    socket
+                                        .send(Message::Text(packet.clone()))
+                                        .await
+                                        .context("failed to send stream subscription packet")?;
+                                }
+                                sent_subscription = true;
+                            }
+                        }
+                        packet if packet == "41" || packet.starts_with("44") => {
+                            let payload = parse_engine_or_socketio_error(packet)
+                                .unwrap_or(Value::String(packet.to_string()));
+                            return Err(anyhow!(json!({
+                                "url": url,
+                                "stream": {
+                                    "event": "socket_error",
+                                    "payload": payload,
+                                },
+                                "received_messages": received,
+                            })
+                            .to_string()));
+                        }
+                        packet if packet.starts_with("42") => {
+                            let Some(event) = parse_socketio_event(packet)? else {
+                                continue;
+                            };
+
+                            match event.name.as_str() {
+                                "subscription_connected" => {
+                                    if !sent_subscription {
+                                        if let Some(packet) = &subscribe_packet {
+                                            socket
+                                                .send(Message::Text(packet.clone()))
+                                                .await
+                                                .context(
+                                                    "failed to send stream subscription packet",
+                                                )?;
+                                        }
+                                        sent_subscription = true;
+                                    }
+                                }
+                                "subscription_registered" => {}
+                                "subscription_event" => received.push(event.payload),
+                                "subscription_error" => {
+                                    return Err(anyhow!(json!({
+                                        "url": url,
+                                        "stream": {
+                                            "event": event.name,
+                                            "payload": event.payload,
+                                        },
+                                        "received_messages": received,
+                                    })
+                                    .to_string()));
+                                }
+                                _ => {}
+                            }
+                        }
+                        _ => {}
+                    }
+                }
             }
             Message::Binary(bytes) => {
                 received.push(json!({
@@ -2962,9 +3403,27 @@ async fn handle_stream(config: &Config, cmd: StreamCommand) -> Result<Value> {
     }))
 }
 
-fn build_stream_subscribe_message(cmd: &StreamCommand) -> Result<Option<String>> {
+fn build_stream_auth_packet(api_key: &str) -> Result<String> {
+    Ok(format!(
+        "40{STREAM_SOCKET_NAMESPACE},{}",
+        json!({ "apiKey": api_key })
+    ))
+}
+
+fn build_stream_subscribe_packet(cmd: &StreamCommand) -> Result<Option<String>> {
     if let Some(message) = &cmd.subscribe {
-        return Ok(Some(message.clone()));
+        let trimmed = message.trim();
+        if matches!(trimmed.chars().next(), Some('0' | '2' | '3' | '4')) {
+            return Ok(Some(trimmed.to_string()));
+        }
+
+        let parsed =
+            serde_json::from_str::<Value>(message).unwrap_or(Value::String(message.clone()));
+        let args = match parsed {
+            Value::Array(items) => items,
+            value => vec![value],
+        };
+        return Ok(Some(build_socketio_event_packet("subscription", args)));
     }
 
     let Some(event_type) = &cmd.event_type else {
@@ -2977,18 +3436,90 @@ fn build_stream_subscribe_message(cmd: &StreamCommand) -> Result<Option<String>>
         cmd.period,
         &cmd.addresses,
     )?;
-    let payload = json!({
-        "id": cmd.id.unwrap_or(1),
-        "method": "subscribe",
-        "params": [{
-            "eventType": event_type,
-            "protocol": cmd.target.protocol,
-            "network": cmd.target.network,
-            "condition": condition.unwrap_or(Value::Object(Map::new()))
-        }]
-    });
 
-    Ok(Some(payload.to_string()))
+    Ok(Some(build_socketio_event_packet(
+        "subscription",
+        vec![
+            json!(cmd.id.unwrap_or(1)),
+            Value::String(event_type.clone()),
+            Value::String(
+                json!({
+                    "description": format!(
+                        "nodit-cli {} {}",
+                        cmd.target.protocol, event_type
+                    ),
+                    "condition": condition.unwrap_or(Value::Object(Map::new()))
+                })
+                .to_string(),
+            ),
+        ],
+    )))
+}
+
+fn build_socketio_event_packet(event_name: &str, args: Vec<Value>) -> String {
+    let mut values = Vec::with_capacity(args.len() + 1);
+    values.push(Value::String(event_name.to_string()));
+    values.extend(args);
+    format!("42{STREAM_SOCKET_NAMESPACE},{}", Value::Array(values))
+}
+
+fn split_socketio_packets(message: &str) -> Vec<&str> {
+    message
+        .split('\u{1e}')
+        .filter(|packet| !packet.is_empty())
+        .collect()
+}
+
+fn parse_engine_or_socketio_error(packet: &str) -> Option<Value> {
+    let payload = packet.strip_prefix("44")?;
+    let payload = strip_socketio_namespace(payload);
+    serde_json::from_str::<Value>(payload).ok()
+}
+
+#[derive(Debug)]
+struct SocketIoEvent {
+    name: String,
+    payload: Value,
+}
+
+fn parse_socketio_event(packet: &str) -> Result<Option<SocketIoEvent>> {
+    let Some(payload) = packet.strip_prefix("42") else {
+        return Ok(None);
+    };
+    let payload = strip_socketio_namespace(payload);
+
+    let value = serde_json::from_str::<Value>(payload)
+        .with_context(|| format!("invalid socket.io event payload: {payload}"))?;
+    let Value::Array(mut items) = value else {
+        return Ok(None);
+    };
+    if items.is_empty() {
+        return Ok(None);
+    }
+
+    let name = items
+        .remove(0)
+        .as_str()
+        .map(str::to_string)
+        .context("socket.io event name must be a string")?;
+    let payload = if items.len() == 1 {
+        items.remove(0)
+    } else {
+        Value::Array(items)
+    };
+
+    Ok(Some(SocketIoEvent { name, payload }))
+}
+
+fn strip_socketio_namespace(payload: &str) -> &str {
+    if payload.starts_with('/') {
+        payload
+            .split_once(',')
+            .map(|(_, body)| body)
+            .unwrap_or_default()
+    } else {
+        payload
+    }
 }
 
 async fn execute_data_action(
@@ -3041,6 +3572,32 @@ struct DataActionRequest<'a> {
     headers: &'a [HeaderArg],
 }
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+enum ResponseKind {
+    Http,
+    JsonRpc,
+}
+
+async fn execute_rpc_request(
+    client: &Client,
+    method: Method,
+    url: &str,
+    headers: HeaderMap,
+    body: Option<Value>,
+    output: &OutputFormat,
+) -> Result<Value> {
+    execute_request(
+        client,
+        method,
+        url,
+        headers,
+        body,
+        output,
+        ResponseKind::JsonRpc,
+    )
+    .await
+}
+
 async fn execute_json_request(
     client: &Client,
     method: Method,
@@ -3048,6 +3605,27 @@ async fn execute_json_request(
     headers: HeaderMap,
     body: Option<Value>,
     output: &OutputFormat,
+) -> Result<Value> {
+    execute_request(
+        client,
+        method,
+        url,
+        headers,
+        body,
+        output,
+        ResponseKind::Http,
+    )
+    .await
+}
+
+async fn execute_request(
+    client: &Client,
+    method: Method,
+    url: &str,
+    headers: HeaderMap,
+    body: Option<Value>,
+    output: &OutputFormat,
+    response_kind: ResponseKind,
 ) -> Result<Value> {
     let mut request = client.request(method.clone(), url).headers(headers);
     if let Some(body) = body {
@@ -3066,7 +3644,7 @@ async fn execute_json_request(
         .context("failed to read response body")?;
     let parsed = serde_json::from_str::<Value>(&text).unwrap_or(Value::String(text));
 
-    if !status.is_success() {
+    if !status.is_success() || response_body_has_error(response_kind, &parsed) {
         return Err(anyhow!(json!({
             "status": status.as_u16(),
             "url": url,
@@ -3086,16 +3664,33 @@ async fn execute_json_request(
     }
 }
 
+fn response_body_has_error(kind: ResponseKind, body: &Value) -> bool {
+    match kind {
+        ResponseKind::Http => false,
+        ResponseKind::JsonRpc => match body {
+            Value::Object(object) => object.contains_key("error"),
+            Value::Array(items) => items.iter().any(|item| match item {
+                Value::Object(object) => object.contains_key("error"),
+                _ => false,
+            }),
+            _ => false,
+        },
+    }
+}
+
 fn build_headers(api_key: &Option<String>, custom_headers: &[HeaderArg]) -> Result<HeaderMap> {
     let mut headers = HeaderMap::new();
     headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-    if let Some(api_key) = api_key {
-        headers.insert(
-            HeaderName::from_static("x-api-key"),
-            HeaderValue::from_str(api_key).context("invalid NODIT_API_KEY value")?,
-        );
-    }
+    let api_key = api_key
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| anyhow!(authentication_required_message()))?;
+    headers.insert(
+        HeaderName::from_static("x-api-key"),
+        HeaderValue::from_str(api_key).context("invalid NODIT_API_KEY value")?,
+    );
 
     for header in custom_headers {
         let name = HeaderName::from_bytes(header.name.as_bytes())
@@ -3114,6 +3709,14 @@ fn maybe_parse_json(input: Option<&str>) -> Result<Option<Value>> {
 
 fn parse_json_required(input: &str) -> Result<Value> {
     serde_json::from_str::<Value>(input).with_context(|| "invalid JSON body".to_string())
+}
+
+fn parse_json_array_required(input: &str, context: &str) -> Result<Value> {
+    let parsed = parse_json_required(input)?;
+    if !parsed.is_array() {
+        return Err(anyhow!("{context} must be a JSON array"));
+    }
+    Ok(parsed)
 }
 
 fn parse_optional_json_array(input: Option<&str>) -> Result<Value> {
@@ -3159,16 +3762,45 @@ fn build_rpc_url(config: &Config, target: &NetworkArgs) -> Result<String> {
     }
 }
 
-fn build_stream_url(config: &Config, target: &NetworkArgs) -> String {
-    match &config.stream_url {
-        Some(url) => url.clone(),
-        None => format!(
-            "{}/v1/{}/{}",
-            config.stream_base_url.trim_end_matches('/'),
-            target.protocol,
-            target.network
-        ),
+fn build_stream_url(
+    config: &Config,
+    explicit_url: Option<&str>,
+    target: &NetworkArgs,
+) -> Result<String> {
+    let base = explicit_url
+        .or(config.stream_url.as_deref())
+        .unwrap_or(&config.stream_base_url);
+    let mut url = Url::parse(base).with_context(|| format!("invalid websocket URL: {base}"))?;
+
+    let normalized_path = match url.path().trim_end_matches('/') {
+        "" => "/v1/websocket/".to_string(),
+        "/v1/websocket" => "/v1/websocket/".to_string(),
+        other => format!("{other}/"),
+    };
+    url.set_path(&normalized_path);
+
+    let has_eio = url.query_pairs().any(|(key, _)| key == "EIO");
+    let has_transport = url.query_pairs().any(|(key, _)| key == "transport");
+    let has_protocol = url.query_pairs().any(|(key, _)| key == "protocol");
+    let has_network = url.query_pairs().any(|(key, _)| key == "network");
+
+    {
+        let mut query = url.query_pairs_mut();
+        if !has_eio {
+            query.append_pair("EIO", "4");
+        }
+        if !has_transport {
+            query.append_pair("transport", "websocket");
+        }
+        if !has_protocol {
+            query.append_pair("protocol", &target.protocol);
+        }
+        if !has_network {
+            query.append_pair("network", &target.network);
+        }
     }
+
+    Ok(url.to_string())
 }
 
 fn merge_json_objects(base: Value, extra: Option<&str>) -> Result<Value> {
@@ -3389,6 +4021,19 @@ fn join_url(base: &str, path: &str) -> Result<String> {
     }
     let path = path.trim_start_matches('/');
     Ok(format!("{base}/{path}"))
+}
+
+fn join_url_segments(base: &str, segments: &[&str]) -> Result<String> {
+    let mut url = Url::parse(base).with_context(|| format!("invalid URL: {base}"))?;
+    {
+        let mut path_segments = url
+            .path_segments_mut()
+            .map_err(|_| anyhow!("URL cannot be used as a base for path segments: {base}"))?;
+        for segment in segments {
+            path_segments.push(segment);
+        }
+    }
+    Ok(url.to_string())
 }
 
 fn append_query(url: String, params: &[(&str, String)]) -> Result<String> {
@@ -3672,7 +4317,7 @@ mod tests {
     }
 
     #[test]
-    fn stream_subscribe_message_uses_typed_fields() {
+    fn stream_subscribe_packet_uses_typed_fields() {
         let cmd = StreamCommand {
             target: NetworkArgs {
                 protocol: "ethereum".to_string(),
@@ -3688,21 +4333,27 @@ mod tests {
             messages: 1,
         };
 
-        let message = build_stream_subscribe_message(&cmd)
-            .expect("stream message")
-            .expect("message present");
-        let value: Value = serde_json::from_str(&message).expect("valid json");
+        let packet = build_stream_subscribe_packet(&cmd)
+            .expect("stream packet")
+            .expect("packet present");
+        let value = parse_socketio_event(&packet)
+            .expect("event parse")
+            .expect("event present");
 
-        assert_eq!(value["id"], 7);
-        assert_eq!(value["method"], "subscribe");
-        assert_eq!(value["params"][0]["eventType"], "BLOCK_PERIOD");
-        assert_eq!(value["params"][0]["protocol"], "ethereum");
-        assert_eq!(value["params"][0]["network"], "mainnet");
-        assert_eq!(value["params"][0]["condition"]["period"], 1);
+        assert_eq!(value.name, "subscription");
+        let Value::Array(args) = value.payload else {
+            panic!("subscription payload must be an array");
+        };
+        assert_eq!(args[0], 7);
+        assert_eq!(args[1], "BLOCK_PERIOD");
+        let params = serde_json::from_str::<Value>(args[2].as_str().expect("params string"))
+            .expect("valid params json");
+        assert_eq!(params["description"], "nodit-cli ethereum BLOCK_PERIOD");
+        assert_eq!(params["condition"]["period"], 1);
     }
 
     #[test]
-    fn stream_subscribe_message_uses_address_conditions() {
+    fn stream_subscribe_packet_uses_address_conditions() {
         let cmd = StreamCommand {
             target: NetworkArgs {
                 protocol: "ethereum".to_string(),
@@ -3718,12 +4369,53 @@ mod tests {
             messages: 1,
         };
 
-        let message = build_stream_subscribe_message(&cmd)
-            .expect("stream message")
-            .expect("message present");
-        let value: Value = serde_json::from_str(&message).expect("valid json");
+        let packet = build_stream_subscribe_packet(&cmd)
+            .expect("stream packet")
+            .expect("packet present");
+        let value = parse_socketio_event(&packet)
+            .expect("event parse")
+            .expect("event present");
 
-        assert_eq!(value["params"][0]["condition"]["addresses"][0], "0xabc");
+        let Value::Array(args) = value.payload else {
+            panic!("subscription payload must be an array");
+        };
+        let params = serde_json::from_str::<Value>(args[2].as_str().expect("params string"))
+            .expect("valid params json");
+        assert_eq!(params["condition"]["addresses"][0], "0xabc");
+    }
+
+    #[test]
+    fn build_stream_url_normalizes_socket_endpoint_and_query() {
+        let config = Config {
+            api_key: Some("test".to_string()),
+            api_base_url: "https://web3.nodit.io".to_string(),
+            rpc_url: None,
+            stream_url: None,
+            stream_base_url: "wss://web3.nodit.io".to_string(),
+            aptos_api_base_url: "https://aptos-mainnet.nodit.io/v1".to_string(),
+        };
+        let target = NetworkArgs {
+            protocol: "ethereum".to_string(),
+            network: "mainnet".to_string(),
+        };
+
+        let url = build_stream_url(&config, None, &target).expect("stream url");
+
+        assert!(url.starts_with("wss://web3.nodit.io/v1/websocket/?"));
+        assert!(url.contains("EIO=4"));
+        assert!(url.contains("transport=websocket"));
+        assert!(url.contains("protocol=ethereum"));
+        assert!(url.contains("network=mainnet"));
+    }
+
+    #[test]
+    fn parse_socketio_event_uses_second_item_as_payload() {
+        let event = parse_socketio_event(r#"42["subscription_event",{"blockNumber":"0x1"}]"#)
+            .expect("parse succeeds")
+            .expect("event present");
+
+        assert_eq!(event.name, "subscription_event");
+        assert_eq!(event.payload["blockNumber"], "0x1");
     }
 
     #[test]
@@ -3872,6 +4564,75 @@ mod tests {
     }
 
     #[test]
+    fn parse_json_array_required_rejects_non_array() {
+        assert!(parse_json_array_required(r#"{"not":"array"}"#, "batch body").is_err());
+    }
+
+    #[test]
+    fn build_evm_call_object_includes_extended_fields() {
+        let call = build_evm_call_object(
+            Some("0xreceiver".to_string()),
+            Some("0xdeadbeef".to_string()),
+            Some("0xsender".to_string()),
+            Some("0x5208".to_string()),
+            Some("0x3b9aca00".to_string()),
+            Some("0x1".to_string()),
+        );
+
+        assert_eq!(
+            call,
+            json!({
+                "to": "0xreceiver",
+                "data": "0xdeadbeef",
+                "from": "0xsender",
+                "gas": "0x5208",
+                "gasPrice": "0x3b9aca00",
+                "value": "0x1"
+            })
+        );
+    }
+
+    #[test]
+    fn build_evm_fee_history_params_serializes_percentiles() {
+        let params = build_evm_fee_history_params(20, "latest".to_string(), vec![10.0, 50.5]);
+
+        assert_eq!(params, json!([20, "latest", [10.0, 50.5]]));
+    }
+
+    #[test]
+    fn build_sui_dev_inspect_transaction_block_params_includes_optional_args() {
+        let params = build_sui_dev_inspect_transaction_block_params(
+            "0xsender".to_string(),
+            "AAAB".to_string(),
+            1000,
+            42,
+            Some(r#"{"skipChecks":true}"#),
+        )
+        .expect("sui dev inspect params");
+
+        assert_eq!(
+            params,
+            json!(["0xsender", "AAAB", 1000, 42, {"skipChecks": true}])
+        );
+    }
+
+    #[test]
+    fn build_sui_execute_transaction_block_params_inserts_null_for_missing_options() {
+        let params = build_sui_execute_transaction_block_params(
+            "AAAB".to_string(),
+            vec!["sig-1".to_string(), "sig-2".to_string()],
+            None,
+            Some(crate::cli::SuiExecutionRequestType::WaitForLocalExecution),
+        )
+        .expect("sui execute params");
+
+        assert_eq!(
+            params,
+            json!(["AAAB", ["sig-1", "sig-2"], null, "WaitForLocalExecution"])
+        );
+    }
+
+    #[test]
     fn build_aptos_pagination_params_includes_limit_and_start() {
         let params = build_aptos_pagination_params(Some(25), Some("cursor123".to_string()));
         assert_eq!(
@@ -3887,6 +4648,166 @@ mod tests {
     fn build_aptos_pagination_params_handles_empty_values() {
         let params = build_aptos_pagination_params(None, None);
         assert!(params.is_empty());
+    }
+
+    #[test]
+    fn build_aptos_simulate_query_params_includes_flags() {
+        let params = build_aptos_simulate_query_params(Some(true), Some(false), Some(true));
+
+        assert_eq!(
+            params,
+            vec![
+                ("estimate_gas_price", "true".to_string()),
+                ("estimate_max_gas", "false".to_string()),
+                ("estimate_prioritized_gas_uint_price", "true".to_string()),
+            ]
+        );
+    }
+
+    #[test]
+    fn response_body_has_error_detects_json_rpc_error_object() {
+        let body = json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "error": {
+                "code": -32000,
+                "message": "execution reverted"
+            }
+        });
+
+        assert!(response_body_has_error(ResponseKind::JsonRpc, &body));
+        assert!(!response_body_has_error(ResponseKind::Http, &body));
+    }
+
+    #[test]
+    fn response_body_has_error_detects_json_rpc_batch_error() {
+        let body = json!([
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": "0x1"
+            },
+            {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "error": {
+                    "code": -32601,
+                    "message": "method not found"
+                }
+            }
+        ]);
+
+        assert!(response_body_has_error(ResponseKind::JsonRpc, &body));
+    }
+
+    #[test]
+    fn join_url_segments_encodes_reserved_path_characters() {
+        let url = join_url_segments(
+            "https://aptos-mainnet.nodit.io/v1",
+            &[
+                "accounts",
+                "0x1",
+                "events",
+                "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>",
+                "withdraw_events",
+            ],
+        )
+        .expect("segments should encode");
+
+        assert_eq!(
+            url,
+            "https://aptos-mainnet.nodit.io/v1/accounts/0x1/events/0x1::coin::CoinStore%3C0x1::aptos_coin::AptosCoin%3E/withdraw_events"
+        );
+    }
+
+    #[test]
+    fn webhook_history_query_params_include_typed_filters() {
+        let args = crate::cli::WebhookHistoryArgs {
+            target: NetworkArgs {
+                protocol: "ethereum".to_string(),
+                network: "mainnet".to_string(),
+            },
+            subscription_id: Some("sub-1".to_string()),
+            page: Some(2),
+            rpp: Some(25),
+            with_event_message: Some(true),
+            status: Some(crate::cli::WebhookHistoryStatus::Success),
+            start_at: Some("2025-01-01T00:00:00Z".to_string()),
+            end_at: Some("2025-01-31T23:59:59Z".to_string()),
+            start_sequence_number: Some("42".to_string()),
+            headers: Vec::new(),
+        };
+
+        assert_eq!(
+            build_webhook_history_query_params(&args),
+            vec![
+                ("subscriptionId", "sub-1".to_string()),
+                ("page", "2".to_string()),
+                ("rpp", "25".to_string()),
+                ("withEventMessage", "true".to_string()),
+                ("status", "SUCCESS".to_string()),
+                ("startAt", "2025-01-01T00:00:00Z".to_string()),
+                ("endAt", "2025-01-31T23:59:59Z".to_string()),
+                ("startSequenceNumber", "42".to_string()),
+            ]
+        );
+    }
+
+    #[test]
+    fn ensure_authenticated_rejects_missing_api_key_for_remote_commands() {
+        let config = Config {
+            api_key: None,
+            api_base_url: "https://web3.nodit.io".to_string(),
+            rpc_url: None,
+            stream_url: None,
+            stream_base_url: "wss://web3.nodit.io".to_string(),
+            aptos_api_base_url: "https://aptos-mainnet.nodit.io/v1".to_string(),
+        };
+        let command = Command::Stream(crate::cli::StreamCommand {
+            target: NetworkArgs {
+                protocol: "ethereum".to_string(),
+                network: "mainnet".to_string(),
+            },
+            url: None,
+            subscribe: None,
+            event_type: None,
+            condition_json: None,
+            id: None,
+            period: None,
+            addresses: Vec::new(),
+            messages: 1,
+        });
+
+        let error = ensure_authenticated(&command, &config).expect_err("auth should be required");
+        assert!(error.to_string().contains("authentication required"));
+    }
+
+    #[test]
+    fn ensure_authenticated_allows_webhook_serve_without_api_key() {
+        let config = Config {
+            api_key: None,
+            api_base_url: "https://web3.nodit.io".to_string(),
+            rpc_url: None,
+            stream_url: None,
+            stream_base_url: "wss://web3.nodit.io".to_string(),
+            aptos_api_base_url: "https://aptos-mainnet.nodit.io/v1".to_string(),
+        };
+        let command = Command::Webhook(WebhookCommand::Serve(WebhookServeArgs {
+            host: "127.0.0.1".to_string(),
+            port: 3000,
+            path: "/webhooks/nodit".to_string(),
+            output_file: None,
+            print_body: true,
+            signing_key: None,
+        }));
+
+        ensure_authenticated(&command, &config).expect("webhook serve should stay local-only");
+    }
+
+    #[test]
+    fn has_configured_api_key_rejects_blank_values() {
+        assert!(!has_configured_api_key(&Some("   ".to_string())));
+        assert!(has_configured_api_key(&Some("secret".to_string())));
     }
 
     #[test]
